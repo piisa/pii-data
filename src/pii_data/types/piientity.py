@@ -21,11 +21,20 @@ class PiiEntity:
 
     def __init__(self, ptype: PiiEnum, value: str,
                  chunk: str, pos: int, **kwargs):
-
+        """
+          :param ptype: PII type
+          :param value: the extracted PII string
+          :param chunk: the id for the chunk the PII is in
+          :param pos: position of the PII in the chunk
+        Additional optional arguments are: `subtype`, `lang`, `country` and
+        `docid`
+        """
+        # Compulsory arguments
         self.type = ptype
         self.fields = {'type': ptype.name, 'value': value, 'chunkid': chunk}
         self.pos = pos
 
+        # Optional arguments
         for k in ('subtype', 'lang', 'country', 'docid'):
             v = kwargs.pop(k, None)
             if v:
@@ -33,14 +42,17 @@ class PiiEntity:
 
 
     def __len__(self):
+        """
+        Return the size of the PII string
+        """
         return len(self.fields['value'])
 
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<PiiEntity {self.fields['type']}:{self.fields['value']}>"
 
 
-    def __eq__(self, other):
+    def __eq__(self, other: "PiiEntity") -> bool:
         return (all(self.fields[f] == other.fields[f]
                     for f in ('type', 'value', 'chunkid'))
                 and self.pos == other.pos)
