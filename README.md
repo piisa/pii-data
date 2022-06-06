@@ -30,14 +30,14 @@ YAML file.
 
 ### PII Collection
 
-A PII Collection contains a list of detected/extractied PII Entities. Each
+A PII Collection contains a list of detected/extracted PII Entities. Each
 entity contains all the information needed to correctly identify one PII
 instance and locate it in the document it belongs to.
 
 These are the data classes defined:
  * `PiiCollection`: the full collection of PII
  * `PiiEntity`: one PII instance
- * `PiiDetector`: an objecto to describe the module used to generate a given ç
+ * `PiiDetector`: an objecto to describe the module used to generate a given
     `PiiEntity` object
 	
 `PiiCollection` objects have a `dump()` method that allows writing them in a

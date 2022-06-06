@@ -1,6 +1,6 @@
-'''
+"""
 Provide a custom JSON encoder, able to serialize additional object types
-'''
+"""
 
 import sys
 import datetime
@@ -16,7 +16,7 @@ def keygetter_set(v):
 
 
 class CustomJSONEncoder(json.JSONEncoder):
-    '''
+    """
     A custom JSON encoder that can serialize additional objects:
       - datetime objects (into ISO 8601 strings)
       - sets (as sorted lists)
@@ -25,24 +25,23 @@ class CustomJSONEncoder(json.JSONEncoder):
       - any object having a to_json() or as_dict() method
 
     Any other non-serializable object is converted to its string representation
-    '''
+    """
 
     def __init__(self, *args, binary: Union[bool, int] = True, **kwargs):
-        '''
+        """
           :param binary: if False, do not serialize binary data, but turn into
              a placeholder string. If an integer, use it as the size limit to
              activate placeholder. If `True` always serialize binary data
           All other arguments are passed to the parent class
-        '''
+        """
         self._binary = sys.maxsize if binary is True else int(binary)
         super().__init__(*args, **kwargs)
 
 
     def default(self, obj):
-        '''
+        """
         Serialize some special types
-        '''
-        print("OBJ", obj, datetime.datetime, isinstance(obj, datetime.datetime))
+        """
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         elif isinstance(obj, set):

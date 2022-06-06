@@ -23,7 +23,7 @@ def text_representer(dumper, data):
 
 def dump_yaml(doc: Dict, outputfile: str, indent: int):
     """
-    Dump a source documento as YAML Source Document
+    Dump a PII Source Document to YAML format.
     """
     mydumper = Dumper
     mydumper.add_representer(TextNode, text_representer)

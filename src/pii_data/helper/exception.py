@@ -28,4 +28,7 @@ class ProcException(PiiDataException):
 
 
 class PiiUnimplemented(PiiDataException):
+    """
+    Unimplemented methods/functions
+    """
     pass

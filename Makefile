@@ -14,6 +14,7 @@ NAME := pii-data
 #   3. a default
 VENV ?= $(shell echo $${VIRTUAL_ENV:-/opt/venv/pii})
 
+BASE_PYTHON := python3.8
 PYTHON ?= $(VENV)/bin/python3
 
 # --------------------------------------------------------------------------
@@ -70,7 +71,7 @@ reinstall: uninstall clean pkg install
 
 $(VENV):
 	BASE=$$(basename "$@"); test -d "$$BASE" || mkdir -p "$$BASE"
-	$(PYTHON) -m venv $@
+	$(BASE_PYTHON) -m venv $@
 	$@/bin/pip install wheel
 	$@/bin/pip install -r requirements.txt
 
@@ -80,11 +81,14 @@ $(VENV)/bin/pytest:
 
 # -----------------------------------------------------------------------
 
-upload-check: $(PKGFILE)
-	twine check $(PKGFILE)
+$(VENV)/bin/twine:
+	$(VENV)/bin/pip install twine
+
+upload-check: $(PKGFILE) $(VENV)/bin/twine
+	$(VENV)/bin/twine check $(PKGFILE)
 
 upload-test: $(PKGFILE)
-	twine upload --repository pypitest $(PKGFILE)
+	$(VENV)/bin/twine upload --repository pypitest $(PKGFILE)
 
 upload: $(PKGFILE)
-	twine upload $(PKGFILE)
+	$(VENV)/bin/twine upload $(PKGFILE)

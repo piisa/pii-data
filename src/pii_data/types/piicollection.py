@@ -15,6 +15,12 @@ from .defs import PIIC_FORMAT
 
 
 class PiiDetector:
+    """
+    Description of a PII Detection module
+    """
+
+    __slots__ = "_id", "fields"
+
 
     def __init__(self, name: str, version: str, source: str,
                  url: str = None, method: str = None):
@@ -23,7 +29,7 @@ class PiiDetector:
           :param version: detector version
           :param source: vendor/provider for the detector
           :param url: an optional URL for the detector code
-          :param method: an optional sctring defining the detector method
+          :param method: an optional string defining the detector method
         """
         self._id = f'{source}/{name}/{version}'
         # Compulsory fields
@@ -38,6 +44,9 @@ class PiiDetector:
         return f"<PiiDetector {self._id}>"
 
     def as_dict(self) -> Dict:
+        """
+        Return the object data as a plain dictionary
+        """
         return self.fields
 
 
@@ -60,6 +69,7 @@ class PiiCollection:
 
         self.encoder = CustomJSONEncoder(ensure_ascii=False)
 
+        # Contained data
         self.detectors = {}
         self.detector_map = {}
         self.pii = []
@@ -72,6 +82,8 @@ class PiiCollection:
     def entity(self, entity: PiiEntity, detector: PiiDetector = None):
         """
         Add an entity to the collection
+         :param entity: the entity to add
+         :param detector: the PII Detector used to create this entity
         """
         # Add detector
         if detector:
@@ -93,6 +105,10 @@ class PiiCollection:
     def dump(self, out: TextIO, format: str = 'ndjson', **kwargs):
         """
         Dump the collection to an output destination
+          :param out: destination to write to
+          :param format: output format, either `ndjson` or `json`
+        For `json` format, all additional arguments will be added to the JSON
+        serializer
         """
         header = {
             'date': datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc),
@@ -100,15 +116,20 @@ class PiiCollection:
             'format_version': FORMAT_VERSION,
             'detectors': {k: v.as_dict() for k, v in self.detectors.items()}
         }
+
         if format == 'ndjson':
+
             print(self.encoder.encode(header), file=out)
             for pii in self.pii:
                 print(self.encoder.encode(pii), file=out)
+
         elif format == 'json':
+
             data = {'metadata': header, 'pii_list': self.pii}
             if 'indent' not in kwargs:
                 kwargs['indent'] = 2
             json.dump(data, out, ensure_ascii=False, cls=CustomJSONEncoder,
                       **kwargs)
+
         else:
             raise InvArgException("unknown output format: {}", format)
