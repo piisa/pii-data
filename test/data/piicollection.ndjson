@@ -1,0 +1,3 @@
+{"date": "2000-01-01T00:00:00Z", "format": "pii:pii-collection", "format_version": "0.2.1", "detectors": {"1": {"name": "PII Finder", "version": "0.1.0", "source": "PIISA"}}}
+{"type": "GOV_ID", "value": "12345678", "chunkid": "12", "country": "br", "detector": 1, "lang": "pt", "docid": "doc1", "start": 15, "end": 23}
+{"type": "CREDIT_CARD", "value": "1234567890", "chunkid": "30", "country": "br", "detector": 1, "lang": "pt", "docid": "doc1", "start": 60, "end": 70}
