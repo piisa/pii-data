@@ -9,7 +9,9 @@ PIISA Data Specification.
 
 ## Data structures
 
-Two main data types are defined: PII Source Documents and PII Collections
+Two main data types are defined: PII Source Documents and PII
+Collections. There is also a Source Document data type.
+
 
 ### PII Source Document
 
@@ -28,6 +30,7 @@ combination of both.
 The official dump representation of a PII Source Document is in the form of a
 YAML file.
 
+
 ### PII Collection
 
 A PII Collection contains a list of detected/extracted PII Entities. Each
@@ -45,3 +48,19 @@ standard format, with two representations:
  * a JSON representation, adequate for storage
  * a NDJSON representation (newline-delimited JSON), intended for processing
    and streaming
+
+
+### Source document
+
+A simple representation of document data as a list of text chunks. It allows
+to define a hierarchy between chunks.
+
+
+## Online behaviour
+
+There is partial support to use these data classes in an [streaming] fashion,
+proving a way to feed data incrementally.
+
+
+
+[streaming]: doc/stream.md

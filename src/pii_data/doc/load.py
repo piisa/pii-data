@@ -5,7 +5,7 @@ Read raw documents
 from typing import Dict, TextIO
 
 from .utils import TextNode
-
+from ..helper.io import openfile
 
 
 class RawReader:
@@ -55,7 +55,7 @@ class RawReader:
         '''
         Open a raw text file and read it as a PII Source Document
         '''
-        with open(inputfile, encoding='utf-8') as f:
+        with openfile(inputfile) as f:
             return self.read_file(f)
 
 

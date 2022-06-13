@@ -1,0 +1,11 @@
+chunks:
+- id: 1
+  text: |-
+    PII management specification
+- id: 2
+  text: |-
+    Overall architecture
+  chunks:
+  - id: 3
+    text: |-
+      The general structure of a framework dealing with PII management could be visualized as the following diagram:

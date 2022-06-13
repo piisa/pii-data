@@ -1,0 +1,5 @@
+
+v. 0.0.3
+ * added BaseSourceDocument and BaseSourceDocument classes
+ * minor fixes in other data structures
+ 

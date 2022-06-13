@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "date": "2000-01-01T00:00:00Z",
+    "date": "2000-01-01T00:00:00+00:00",
     "format": "pii:pii-collection",
     "format_version": "0.2.1",
     "detectors": {

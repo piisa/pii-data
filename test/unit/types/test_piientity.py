@@ -2,11 +2,27 @@
 from pii_data.types.piienum import PiiEnum
 import pii_data.types.piientity as mod
 
+import pytest
 
 
 def test10_object():
     """Test object creation"""
     obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
+
+def test11_object_error():
+    """Test object creation, errors"""
+    with pytest.raises(TypeError):
+        mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12")
+
+    with pytest.raises(TypeError):
+        mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15,
+                      44)
+
+def test12_object_kwargs():
+    """Test object creation, kwargs"""
+    obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 10,
+                        lang="ch")
     assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
 
 
