@@ -5,17 +5,22 @@ should allow stream processing. Currently this is the status:
 
 ## Source documents
 
-The standard `SourceDocument` class can only process full local documents,
-since it either loads them from file, or accepts the full set of document
-chunks in the constructor or the `set_chunks()` method.
+The standard `SrcDocument` abstract base class will happily iterate in a
+streaming fashion if the child class provides a `get_chunks()` method that
+yields chunks in iteration.
 
-In order to provide stream processing capabilities:
- * subclass the `BaseSourceDocument` into an e.g. `StraeamSourceDocument`
+So in order to provide stream processing capabilities:
+ * subclass the `SrcDocument` into an e.g. `StreamingSrcDocument`
  * implement a `get_chunks()` method in the subclass, which must return
-   an iterator producing `DocumentChunk` objects
+   an iterator producing chunks (a chunk must be either a dict containing a
+   `data` member, or just the chunk payload)
    
-This should be enough to let the tools process the document in a streaming
-fashion.
+This should be enough to let the tools process the document incrementally.
+
+The `LocalSrcDocument` subclass and variants can only process full local
+documents, since it either loads them from file, or accepts the full set of
+document chunks in the constructor or the `set_chunks()` method.
+
 
 
 ## PiiCollections

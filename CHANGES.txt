@@ -1,3 +1,11 @@
+v. 0.1.0
+ * updated for data spec 0.3.0
+ * added iteration with context
+ * renamed SourceDocument to SrcDocument
+ * local load/dump split from SrcDocument, into a LocalSrcDocument class +
+   a module function
+ * added base classes for tabular, tree & sequential docs
+ * chunk payload change to `data` from `text`, to make it more generic
 
 v. 0.0.3
  * added BaseSourceDocument and BaseSourceDocument classes
