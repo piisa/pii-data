@@ -2,6 +2,8 @@
 Read raw documents
 """
 
+import uuid
+
 from typing import Dict, TextIO
 
 from .utils import TextNode
@@ -10,8 +12,10 @@ from ..helper.io import openfile
 
 class RawReader:
     """
-    Convert a plain text to a YAML PII Source Document, line by line.
-    Can infer hiearchy from leading indent.
+    Convert a plain text file to a data structure for a YAML PII Source
+    Document, reading the file line by line.
+    If instructed to do so, it can infer hierarchy from leading indent, and
+    thus create a tree source document.
     """
 
     def __init__(self, indent: int):
@@ -24,7 +28,14 @@ class RawReader:
         """
         chunkid = 0
         currlev = 0
-        doc = {'chunks': []}
+        maxlev = 0
+
+        doc = {
+            "header": {"document": {
+                "id": str(uuid.uuid4())
+            }},
+            "chunks": []
+        }
         stack = [doc]
 
         for line in src:
@@ -34,27 +45,29 @@ class RawReader:
 
             # Create the chunk
             chunkid += 1
-            chunk = dict(id=chunkid, text=TextNode(raw))
+            chunk = dict(id=chunkid, data=TextNode(raw))
 
             # Find the place where to add the chunk
             if lev < currlev:
                 stack = stack[:-1]
             elif lev > currlev:
-                top = stack[-1]['chunks'][-1]
-                top['chunks'] = []
+                top = stack[-1]["chunks"][-1]
+                top["chunks"] = []
                 stack.append(top)
 
             # Add it
-            stack[-1]['chunks'].append(chunk)
+            stack[-1]["chunks"].append(chunk)
             currlev = lev
+            maxlev = max(maxlev, currlev)
 
+        doc["header"]["document"]["type"] = "tree" if maxlev else "sequential"
         return doc
 
 
     def read(self, inputfile: str) -> Dict:
-        '''
+        """
         Open a raw text file and read it as a PII Source Document
-        '''
+        """
         with openfile(inputfile) as f:
             return self.read_file(f)
 
