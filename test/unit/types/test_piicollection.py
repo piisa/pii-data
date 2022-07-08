@@ -24,19 +24,14 @@ def readfile(name: str) -> str:
 
 @pytest.fixture
 def fix_timestamp(monkeypatch):
-
-    mydatetime = Mock(spec=datetime.datetime)
-    mydatetime.utcnow = Mock(return_value=mydatetime)
-    mydatetime.replace = Mock(return_value=mydatetime)
-    mydatetime.isoformat = Mock(return_value = "2000-01-01T00:00:00Z")
-
-    #print("ISINSTANCE", isinstance(mydatetime, datetime.datetime))
-    datemock = Mock()
-    datemock.datetime = mydatetime
-
-    a = datemock.datetime.utcnow().replace()
-    #print("A", a, isinstance(a, datetime.datetime))
-    monkeypatch.setattr(mod, 'datetime', datemock)
+    """
+    Monkey-patch the piicollection module to ensure the timestamps it produces
+    have always the same value
+    """
+    mock_datetime = Mock()
+    mock_datetime.utcnow.return_value = datetime.datetime(2000, 1, 1)
+    mock_datetime.side_effect = lambda *a, **kw: datetime.datetime(*a, **kw)
+    monkeypatch.setattr(mod, 'datetime', mock_datetime)
 
 
 # ----------------------------------------------------------------
@@ -68,7 +63,7 @@ def test210_piicollection_add():
     det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
     ent = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
 
-    obj.entity(ent, det)
+    obj.add(ent, det)
     assert len(obj) == 1
 
 
@@ -80,32 +75,8 @@ def test220_piicollection_dump_ndjson(fix_timestamp):
     ent1 = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
     ent2 = PiiEntity(PiiEnum.CREDIT_CARD, "1234567890", chunk="30", pos=60,
                      country="br")
-    obj.entity(ent1, det)
-    obj.entity(ent2, det)
-    assert len(obj) == 2
-
-    # NDJSON format
-    try:
-        with tempfile.NamedTemporaryFile(mode="wt", delete=False) as f:
-            obj.dump(f)
-        got = readfile(f.name)
-    finally:
-        Path(f.name).unlink()
-
-    exp = readfile(fname('piicollection.ndjson'))
-    assert exp == got
-
-
-def test230_piicollection_dump_json(fix_timestamp):
-    """Test JSON dump"""
-    obj = mod.PiiCollection(lang="pt", docid="doc1")
-
-    det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    ent1 = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
-    ent2 = PiiEntity(PiiEnum.CREDIT_CARD, "1234567890", chunk="30", pos=60,
-                     country="br")
-    obj.entity(ent1, det)
-    obj.entity(ent2, det)
+    obj.add(ent1, det)
+    obj.add(ent2, det)
     assert len(obj) == 2
 
     # JSON format
@@ -123,3 +94,43 @@ def test230_piicollection_dump_json(fix_timestamp):
     #with open(fname('piicollection.ndjson'), "w", encoding="utf-8") as f:
     #          obj.dump(f, format="ndjson")
 
+
+def test300_piicollection_load_json(fix_timestamp):
+    """Test JSON load"""
+
+    obj = mod.PiiCollectionLoader()
+    obj.load_json(fname('piicollection.json'))
+    assert len(obj) == 2
+
+    # Dump again to file
+    try:
+        with tempfile.NamedTemporaryFile(mode="wt", delete=False) as f:
+            obj.dump(f, format='json')
+        got = readfile(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    # Check that the dumped file has the same data
+    exp = readfile(fname('piicollection.json'))
+    assert json.loads(exp) == json.loads(got)
+
+
+def test310_piicollection_load_json(fix_timestamp):
+    """Test NDJSON load"""
+
+    obj = mod.PiiCollectionLoader()
+    with open(fname('piicollection.ndjson'), encoding='utf-8') as f:
+        obj.load_ndjson(f)
+    assert len(obj) == 2
+
+    # Dump again to file
+    try:
+        with tempfile.NamedTemporaryFile(mode="wt", delete=False) as f:
+            obj.dump(f, format='json')
+        got = readfile(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    # Check that the dumped file has the same data
+    exp = readfile(fname('piicollection.json'))
+    assert json.loads(exp) == json.loads(got)

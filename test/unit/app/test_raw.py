@@ -1,9 +1,11 @@
 from pathlib import Path
 import tempfile
 
+from unittest.mock import Mock
 import pytest
 
 from pii_data.helper import load_yaml
+import pii_data.doc.rawtext as doc
 import pii_data.app.rawdoc as mod
 
 
@@ -16,7 +18,18 @@ def readfile(name: str) -> str:
         return f.read().strip()
 
 
-def test10_read():
+@pytest.fixture
+def fix_uuid(monkeypatch):
+    """
+    Monkey-patch the document module to ensure a fixed uuid
+    """
+    mock_uuid = Mock()
+    mock_uuid.uuid4 = Mock(return_value="00000-11111")
+    monkeypatch.setattr(doc, 'uuid', mock_uuid)
+
+
+
+def test10_read(fix_uuid):
     """Test reading a raw file"""
 
     with tempfile.NamedTemporaryFile() as f:
@@ -25,7 +38,8 @@ def test10_read():
         mod.from_raw(fname('doc-example.txt'), f.name, indent=2)
         #mod.from_raw(fname('doc-example.txt'), fname('doc-example-2.yaml'), 2)
         got = load_yaml(f.name)
-        exp = load_yaml(fname('doc-example.yaml'))
+
+        exp = load_yaml(fname('doc-example-tree-id.yaml'))
         assert got == exp
 
 
@@ -35,10 +49,9 @@ def test20_write():
     with tempfile.NamedTemporaryFile() as f:
         f.close()
 
-        mod.to_raw(fname('doc-example.yaml'), f.name, indent=2)
+        mod.to_raw(fname('doc-example-tree.yaml'), f.name, indent=2)
         #mod.from_raw(fname('doc-example.txt'), fname('doc-example-2.yaml'), 2)
+        got = readfile(f.name)
 
         exp = readfile(fname('doc-example.txt'))
-        got = readfile(f.name)
         assert got == exp
-        

@@ -27,7 +27,14 @@ class ProcException(PiiDataException):
     pass
 
 
-class PiiUnimplemented(PiiDataException):
+class FileException(ProcException):
+    """
+    An problem with a file
+    """
+    pass
+
+
+class UnimplementedException(PiiDataException):
     """
     Unimplemented methods/functions
     """

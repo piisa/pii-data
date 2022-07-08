@@ -2,7 +2,7 @@
 A class to describe a list of detected PII entities
 """
 
-import datetime
+from datetime import datetime, timezone
 import json
 
 from typing import TextIO, Dict
@@ -52,6 +52,10 @@ class PiiDetector:
 
 
 class PiiCollection:
+    """
+    A object holding a list of PiiEntity items, plus the PiiDetector objects
+    associated with them
+    """
 
     def __init__(self, lang: str = None, docid: str = None):
         """
@@ -67,6 +71,7 @@ class PiiCollection:
         if docid:
             self.defaults['docid'] = docid
 
+        # Encoder for generating NDJSON output
         self.encoder = CustomJSONEncoder(ensure_ascii=False)
 
         # Contained data
@@ -76,22 +81,31 @@ class PiiCollection:
 
 
     def __len__(self) -> int:
+        """
+        Return the number of PII instances in the object
+        """
         return len(self.pii)
 
-
-    def entity(self, entity: PiiEntity, detector: PiiDetector = None):
+    def add_detector(self, detector: PiiDetector) -> str:
         """
-        Add an entity to the collection
+        Add a new detector to the header. returns the detector index
+        """
+        if detector._id not in self.detector_map:
+            num = len(self.detectors) + 1
+            self.detectors[num] = detector
+            self.detector_map[detector._id] = num
+        return self.detector_map[detector._id]
+
+
+    def add(self, entity: PiiEntity, detector: PiiDetector = None):
+        """
+        Add a PII entity to the collection
          :param entity: the entity to add
          :param detector: the PII Detector used to create this entity
         """
         # Add detector
         if detector:
-            if detector._id not in self.detector_map:
-                num = len(self.detectors) + 1
-                self.detectors[num] = detector
-                self.detector_map[detector._id] = num
-            entity.fields['detector'] = self.detector_map[detector._id]
+            entity.fields['detector'] = self.add_detector(detector)
 
         # Add default values
         for k, v in self.defaults.items():
@@ -107,11 +121,11 @@ class PiiCollection:
         Dump the collection to an output destination
           :param out: destination to write to
           :param format: output format, either `ndjson` or `json`
-        For `json` format, all additional arguments will be added to the JSON
-        serializer
+        For `json` format, all passed additional arguments will be added to
+        the JSON serializer
         """
         header = {
-            'date': datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc),
+            'date': datetime.utcnow().replace(tzinfo=timezone.utc),
             'format': PIIC_FORMAT,
             'format_version': FORMAT_VERSION,
             'detectors': {k: v.as_dict() for k, v in self.detectors.items()}
@@ -133,3 +147,51 @@ class PiiCollection:
 
         else:
             raise InvArgException("unknown output format: {}", format)
+
+
+# --------------------------------------------------------------------------
+
+def check_format(metadata: Dict, source_name: str):
+    """
+    Check that the PiiCollection header contains valid tags
+    """
+    fmt = metadata.get('format')
+    if fmt != PIIC_FORMAT:
+        raise InvArgException('invalid format "{}" found in {}',
+                              fmt, source_name)
+    ver = metadata.get('format_version')
+    if ver != FORMAT_VERSION:
+        raise InvArgException('invalid format version "{}" found in {}',
+                              fmt, source_name)
+
+
+class PiiCollectionLoader(PiiCollection):
+    """
+    A subclass of PiiCollection that can load data from external sources
+    """
+
+    def _load_detectors(self, detectors: Dict) -> Dict:
+        self.detectors = {k: PiiDetector(**v) for k, v in detectors.items()}
+        self.detector_map = {v._id: k for k, v in self.detectors.items()}
+
+
+    def load_json(self, filename: str):
+        """
+        Load a PiiCollection from a JSON file
+        """
+        with open(filename, encoding='utf-8') as f:
+            data = json.load(f)
+        meta = data['metadata']
+        check_format(meta, filename)
+        self._load_detectors(meta['detectors'])
+        self.pii = data['pii_list']
+
+
+    def load_ndjson(self, src: TextIO):
+        """
+        Load a PiiCollection from a file-like source contianing NDJSON data
+        """
+        header = json.loads(next(src))
+        check_format(header, 'ndjson source')
+        self._load_detectors(header['detectors'])
+        self.pii = [json.loads(line) for line in src]
