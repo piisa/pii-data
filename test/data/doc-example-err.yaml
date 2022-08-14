@@ -1,7 +1,5 @@
-format: 'piisa:src-document:v1'
 header:
   document:
-    id: "data/doc-example-tree.yaml"
     type: tree
 chunks:
 - id: 1

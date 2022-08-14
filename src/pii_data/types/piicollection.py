@@ -11,7 +11,7 @@ from .. import FORMAT_VERSION
 from ..helper.json_encoder import CustomJSONEncoder
 from ..helper.exception import InvArgException
 from .piientity import PiiEntity
-from .defs import PIIC_FORMAT
+from ..defs import FMT_PIICOLLECTION
 
 
 class PiiDetector:
@@ -126,7 +126,7 @@ class PiiCollection:
         """
         header = {
             'date': datetime.utcnow().replace(tzinfo=timezone.utc),
-            'format': PIIC_FORMAT,
+            'format': FMT_PIICOLLECTION,
             'format_version': FORMAT_VERSION,
             'detectors': {k: v.as_dict() for k, v in self.detectors.items()}
         }
@@ -156,7 +156,7 @@ def check_format(metadata: Dict, source_name: str):
     Check that the PiiCollection header contains valid tags
     """
     fmt = metadata.get('format')
-    if fmt != PIIC_FORMAT:
+    if fmt != FMT_PIICOLLECTION:
         raise InvArgException('invalid format "{}" found in {}',
                               fmt, source_name)
     ver = metadata.get('format_version')

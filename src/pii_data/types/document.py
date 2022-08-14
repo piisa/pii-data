@@ -5,14 +5,16 @@ A base abstract class is provided, subclasses need to implement at least the
 get_chunks() method, producing an iterable of chunks.
 """
 
-
 from collections import namedtuple, defaultdict
 from types import MappingProxyType
 import uuid
 
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Tuple, Callable
 
 from ..helper.exception import UnimplementedException
+
+
+TYPE_META = Dict[str, Dict]
 
 
 # The contents of a document chunk:
@@ -29,17 +31,18 @@ class SrcDocument:
     Child classes need to provide at least a get_chunks method
     """
 
-    def __init__(self, document_info: Dict = None,
-                 add_chunk_context: bool = False):
+    def __init__(self, metadata: TYPE_META = None, iter_options: Dict = None):
         """
-          :param document_info: document general information
-          :param add_chunk_context: add context information when iterating over
-           chunks
+          :param metadata: document general metadata (e.g. "document" &
+            "dataset" dictionaries)
+          :param iter_options: set iteration options
         """
-        self._do_ctx = add_chunk_context
+        self._iter_options = iter_options or {}
         self._chunk_id = 0
         self._meta = defaultdict(dict)
-        self.set_header_document(document_info)
+        self.set_id()
+        if metadata:
+            self.add_metadata(**metadata)
 
 
     def __repr__(self) -> str:
@@ -47,9 +50,9 @@ class SrcDocument:
 
 
     @property
-    def header(self):
+    def metadata(self):
         """
-        Return a read-only representation of the full document header
+        Return a read-only representation of the full document metadata
         """
         return MappingProxyType(self._meta)
 
@@ -62,141 +65,230 @@ class SrcDocument:
         return self._meta["document"].get("id")
 
 
-    def set_id(self, id: str):
+    def set_id(self, id: str = None):
         """
         Set the document identifier inside the document metadata
+        If an id is nor passed, a random UUID will be used.
         """
-        self._meta["document"]["id"] = id
+        self._meta["document"]["id"] = id or str(uuid.uuid4())
 
 
-    def set_header_document(self, document_info: Dict = None):
-        """
-        Set the data for the document-level info (part of the document
-        metadata)
-        If not present, a document id is automatically added as a random UUID
-        """
-        glb = document_info or {}
-        if "id" not in glb:
-            glb["id"] = str(uuid.uuid4())
-        self._meta["document"] = glb
-
-
-    def add_metadata(self, **kwargs):
+    def add_metadata(self, **metadata):
         """
         Update the document metadata elements, adding all passed arguments
         (which should be dictionaries)
         """
-        for k, v in kwargs.items():
+        for k, v in metadata.items():
             self._meta[k].update(v)
 
 
-    def _chunk(self, before: Tuple, current: Tuple, after: Tuple) -> Dict:
+    def __iter__(self) -> Iterable[Dict]:
+        """
+        Standard full iterator
+        """
+        return self.iter_full()
+
+
+    def _chunk(self, chunk: Tuple,
+               before: Tuple, after: Tuple) -> DocumentChunk:
         """
         Create a chunk object, with context
         """
+        # Copy the base (document-level) context
         ctx = self._ctx.copy()
+        # Add the before & after fields
         if before:
-            ctx["before"] = before[1]
+            ctx["before"] = before
         if after:
-            ctx["after"] = after[1]
-        data = *current, ctx
+            ctx["after"] = after
+        # Split extra context
+        #print("CHUNK", chunk)
+        *chunk, extra_context = chunk
+        # Add any additional fields
+        if extra_context:
+            ctx.update(extra_context)
+        # Create the object
+        data = *chunk, ctx
         return DocumentChunk(*data)
 
 
-    def iter_chunks(self, add_context: bool = None) -> Iterable[Dict]:
+    def iter_full(self, context: bool = None,
+                  chunk_iterator: Callable = None) -> Iterable[Dict]:
         """
-        Iterator method, with additional options
-        Produce an iterable over document chunks, with or without context
-        (depending on the object config, or on the passed extra argument).
-
-        Calls the get_chunks() method, to be implemented by subclasses.
+        Iterate over the document, producing a sequence of individual
+        DocumentChunk objects
+         :param context: add context information to each chunk (this will modify
+           the generic object config)
+         :param chunk_iterator: the function providing base chunks. If not
+           passed, the iter_flat() method will be used.
         """
-        before = current = None
-        if add_context is None:
-            add_context = self._do_ctx
-        if add_context:
+        do_context = context if context is not None else self._iter_options.get("context", False)
+        if do_context:
             self._ctx = {k: MappingProxyType(v) for k, v in self._meta.items()}
+        if chunk_iterator is None:
+            chunk_iterator = self.iter_struct
 
-        for data in self.get_chunks():
+        before = current = None
 
-            # Get chunk_id and payload
-            chunk_id = None
-            if isinstance(data, dict) and "data" in data:
-                chunk_id = data.get("id")
-                data = data["data"]
+        for elem in chunk_iterator():
+
+            #print("ELEM", elem)
+
+            # If we have an already built DocumentChunk, deliver it
+            if isinstance(elem, DocumentChunk):
+                yield elem
+                continue
+
+            # Get chunk components (id, payload, additional context)
+            chunk_id = elem.get("id")
+            payload = elem["data"]
+            extra_context = elem.get("context") if do_context else None
             if chunk_id is None:
                 self._chunk_id += 1
                 chunk_id = self._chunk_id
-            data = (str(chunk_id), data)
+            chunk = str(chunk_id), payload, extra_context
 
             # Render without context
-            if not add_context:
-                yield DocumentChunk(*data)
+            if not do_context:
+                yield DocumentChunk(*chunk)
                 continue
 
             # Render with context: track the chunks before & after
             if before is None:
-                before = data
+                before = chunk                                  # 1st chunk
             elif current is None:
-                yield self._chunk(None, before, data)
-                current = data
+                yield self._chunk(before, None, chunk[1])        # 2nd chunk
+                current = chunk
             else:
-                yield self._chunk(before, current, data)
+                yield self._chunk(current, before[1], chunk[1])    # 3rd and more
                 before = current
-                current = data
+                current = chunk
 
-        # Last chunk?
-        if add_context:
+        # A pending last chunk?
+        if do_context:
             if current:
-                yield self._chunk(before, current, None)
+                yield self._chunk(current, before[1], None)     # 2nd or more
             elif before:
-                yield self._chunk(None, before, None)
+                yield self._chunk(before, None, None)           # only 1 chunk
 
 
-    def __iter__(self) -> Iterable[Dict]:
-        return self.iter_chunks()
+    def iter_struct(self) -> Iterable[Dict]:
+        """
+        Iterate over the object base iterator, ensuring that (a) we produce
+        dictionaries and (b) all chunks have an id
+        """
+        is_dict = None
+        for n, chunk in enumerate(self.iter_base(), start=1):
+            if is_dict is None:
+                is_dict = hasattr(chunk, "get") and chunk.get("data") is not None
+            if not is_dict:
+                chunk = {"id": str(n), "data": chunk}
+            elif 'id' not in chunk:
+                chunk = chunk.copy()
+                chunk["id"] = str(n)
+            yield chunk
 
 
-    def get_chunks(self) -> Iterable[DocumentChunk]:
-        raise UnimplementedException("abstract class")
+    def iter_base(self) -> Iterable[Dict]:
+        """
+        The method to be implemented by subclasses. When iterated, it
+        should return a sequence of chunks. Each chunk can be:
+          * a dictionary-like object, containing at least a "data" field, and
+            (optionally) an "id" field
+          * a chunk payload (any data structure, except the two above)
+        """
+        raise UnimplementedException("abstract document class: missing iter_base() method")
 
 
 # --------------------------------------------------------------------------
 
 
+class SequenceSrcDocument(SrcDocument):
+    """
+    A sequence document, as an abstract class
+    """
+
+    def iter_full(self, context: bool = None, **kwargs) -> Iterable[Dict]:
+        return super().iter_full(context=context)
+
+
+
 class TreeSrcDocument(SrcDocument):
     """
     A tree document, as an abstract class.
-    Subclasses need to implement the top_chunks() method, which gives an
-    iterable over just the document top-level chunks
     """
 
-    def _yield_chunks(self, chunk: Dict) -> Iterable[DocumentChunk]:
+    def _yield_chunks(self, chunk: Dict, num: int, prefix: str,
+                      context: str = None) -> Iterable[Dict]:
         """
-        Return a sequence of chunks from an element in the document tree
+        Return all the chunks stemming from an element in the document
+        tree, as a linear sequence
         """
-        # This chunk
-        text = chunk.get("data")
-        if text:
-            yield text
-        # Child chunks
-        for subchunk in chunk.get("chunks", []):
-            yield from self._yield_chunks(subchunk)
+        # Get base fields
+        data = chunk.get("data")
+        ctx = chunk.get("context") or context
+
+        # Produce *this* chunk (if it contains data)
+        if data:
+            obj = {"id": f"{prefix}{num}", "data": data}
+            if ctx:
+                obj['context'] = ctx
+            yield obj
+
+        # Produce child chunks
+        subprefix = f"{prefix}{num}."
+        for n, subchunk in enumerate(chunk.get("chunks", []), start=1):
+            yield from self._yield_chunks(subchunk, n, subprefix, ctx)
 
 
-    def get_chunks(self) -> Iterable[str]:
+    def _recurse_tree(self) -> Iterable[Dict]:
         """
-        Return all chunks from the document tree, traversing it deep-first
-        Requires a top_chunks() method
+        Return all chunks from the document tree in a sequence, traversing it
+        deep-first
         """
-        for chunk in self.top_chunks():
-            yield from self._yield_chunks(chunk)
+        for n, chunk in enumerate(self.iter_base(), start=1):
+            yield from self._yield_chunks(chunk, n, "")
 
 
-    def top_chunks(self) -> Iterable[Dict]:
-        raise UnimplementedException("abstract class")
+    def iter_full(self, context: bool = None) -> Iterable[Dict]:
+        """
+        Iterate over the document, producing a linear sequence of DocumentChunk
+        objects
+        """
+        return super().iter_full(context=context,
+                                 chunk_iterator=self._recurse_tree)
 
 
 
-class TabularSrcDocument(SrcDocument):
-    pass
+class TableSrcDocument(SrcDocument):
+    """
+    A table document, as an abstract class.
+    """
+
+    def _iter_cells(self) -> Iterable[Dict]:
+        """
+        Return all cells from the document tree in a sequence, traversing it
+        in row-major order
+        """
+        header = self.metadata
+        colnames = header.get("column", {}).get("name")
+        for r, row in enumerate(self.iter_base(), start=1):
+            rowdata = row.get("data", [])
+            for c, cell in enumerate(rowdata, start=1):
+                data = {
+                    "id": f"{r}.{c}",
+                    "data": cell,
+                    "context": {"column": {"number": c}}
+                }
+                if colnames:
+                    data["context"]["column"]["name"] = colnames[c-1]
+                yield data
+
+
+    def iter_full(self, context: bool = None) -> Iterable[Dict]:
+        """
+        Iterate over the document, producing a sequence of DocumentChunk
+        objects
+        """
+        return super().iter_full(context=context,
+                                 chunk_iterator=self._iter_cells)

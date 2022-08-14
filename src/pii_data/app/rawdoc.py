@@ -1,28 +1,13 @@
 """
-Simple script to read & write YAML Source Documents for PII Detection
+Simple script to convert a YAML Source Document to raw text
 """
 
 from argparse import ArgumentParser, Namespace
 
 from ..helper import load_yaml
-from ..doc import load_raw, dump_raw, dump_yaml
-
-
-
-def to_raw(inputfile: str, outputfile: str, indent: int):
-    """
-    Convert a YAML PII Source Document to plain text
-    """
-    doc = load_yaml(inputfile)
-    dump_raw(doc, outputfile, indent)
-
-
-def from_raw(inputfile: str, outputfile: str, indent: int):
-    """
-    Read a raw text file and convert it to PII Source Document
-    """
-    doc = load_raw(inputfile, indent)
-    dump_yaml(doc, outputfile, indent)
+from ..helper.io import base_extension
+from ..doc import dump_text, dump_yaml
+from ..types.localdoc import LocalSrcDocument
 
 
 # --------------------------------------------------------------------------
@@ -36,12 +21,19 @@ def parse_args():
 
 
 def main(args: Namespace = None):
+
     if not args:
         args = parse_args()
-    if args.inputdoc.endswith(('.yml', '.yaml')):
-        to_raw(args.inputdoc, args.outputdoc, args.indent)
+
+    # Read document
+    doc = LocalSrcDocument(args.inputdoc)
+
+    # Write it
+    ext2 = base_extension(args.outputdoc)
+    if ext2 in ('.yml', '.yaml'):
+        dump_yaml(doc, args.outputdoc)
     else:
-        from_raw(args.inputdoc, args.outputdoc, args.indent)
+        dump_text(doc, args.outputdoc, args.indent)
 
 
 if __name__ == '__main__':

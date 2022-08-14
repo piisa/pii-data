@@ -9,7 +9,7 @@ elements:
 The Python data structure for a document chunk is `DocumentChunk`, which
 is just a Python `namedtuple`, with up to three elements:
  * `id`: chunk identifier
- * `data`: the chunk contents (a raw text excerpt, or other types of content).
+ * `data`: the chunk contents (typically a raw unicode text blob).
  * `context`: contextual information associated to the chunk (optional)
 
 
@@ -17,51 +17,58 @@ is just a Python `namedtuple`, with up to three elements:
 
 Three document variants are defined:
  
- - a *sequential* PII Source Document is just a sequence of chunks
+ - a *sequence* PII Source Document is just a sequence of chunks
  - in a *tree* PII Source Document chunks might contain other chunks,
    in a nested fashion
- - a *tabular* PII Source Document has a table structure (rows and columns).
+ - a *table* PII Source Document has a table structure (rows and columns).
    
 
-## Base classes
+## Root classes
 
 The base Python class to manage a source document is the `SrcDocument` class.
-This is an abstract class; to be usable a child class needs to implement the 
-`get_chunks()` method, which yields an iterator over the document chunks
+This is an abstract class; to be usable a child class needs to [implement] the
+`iter_base()` method, which yields an iterator over document base chunks
 (producing chunk payloads).
 
 There are three subclasses of `SrcDocument`, for each of the three types of
 documents:
- * `SequentialSrcDocument`
+ * `SequenceSrcDocument`
  * `TreeSrcDocument`
- * `TabularSrcDocument`
+ * `TableSrcDocument`
 
-These are still abstract classes, so they still need a subclass implementing
-the `get_chunks()` method (or, in the case of the `TreeSrcDocument`, a
-`top_chunks()` method).
+These are still abstract classes, so they still need the implementation of
+the `iter_base()` method.
 
 
 ## Local document classes
 
-One full instance of a `SrcDocument` is the `LocalSrcDocument` class, which
-can hold all document chunks in memory, and can load/dump to a file. 
+One additional defined subclass of a `SrcDocument` is the 
+`BaseLocalSrcDocument` class, which holds all document chunks in memory (the
+original `SrcDocument` class might produce them on demand from a source), 
+and can load/dump to a file.
 
-Subclasses of `LocalSrcDocument` are also defined for each of the three
+Subclasses of `BaseLocalSrcDocument` are also defined for each of the three
 document types:
- * `SequentialLocalSrcDocument`
+ * `SequenceLocalSrcDocument`
  * `TreeLocalSrcDocument`
- * `TabularLocalSrcDocument`
+ * `TableLocalSrcDocument`
+
+Finally, the `LocalSrcDocument` is a dispatcher class that can open and read
+any of those three classes of local source documents and return an object of
+the right class (after parsing the document header).
 
 
 ## File format
 
 The official dump representation of a PII Source Document is in the form of a
-YAML file, typically using the [block literal style], to ease human reading.
+YAML file. The package generates it using the [block literal style], to ease
+human reading.
 
-However a JSON representation would also be processed by the package (since
-JSON is a subset of YAML anyway).
-
+However any valid YAML file will do for reading the file back. And a JSON
+representation would also be read by the package (since JSON is a subset
+of YAML anyway).
 
 
 [data specification]: https://github.com/piisa/piisa/
 [block literal style]: https://yaml.org/spec/1.2.2/#812-literal-style
+[implement]: implementation.md

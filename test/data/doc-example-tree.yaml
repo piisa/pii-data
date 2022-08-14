@@ -1,3 +1,4 @@
+format: 'piisa:src-document:v1'
 header:
   document:
     type: tree

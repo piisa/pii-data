@@ -40,6 +40,13 @@ rebuild: clean build
 version:
 	@echo "$(VERSION)"
 
+backup:
+	tar cvjf pii-data-$(VERSION).tgz \
+	  --exclude=__pycache__ \
+	  doc src test \
+	  CHANGES.txt LICENSE README.md \
+	  Makefile MANIFEST.in requirements.txt setup.py
+
 # --------------------------------------------------------------------------
 
 TEST ?= test/unit

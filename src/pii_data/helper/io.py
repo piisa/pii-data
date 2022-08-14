@@ -19,21 +19,33 @@ from .exception import InvArgException
 CHARSET_ENCODING = "utf-8"
 
 
-def openfile(name: str, mode: str = 'r') -> TextIO:
+def base_extension(name: str) -> str:
     """
-    Open files, raw text or compressed (gzip, bzip2 or xz)
+    Return the base file extension, once a (possible) compression extension
+    has been removed
+    """
+    name = Path(name)
+    sfx = name.suffix
+    return Path(name.stem).suffix if sfx in ('.gz', '.bz2', '.xz') else sfx
+
+
+def openfile(name: str, mode: str = 'rt', encoding: str = None) -> TextIO:
+    """
+    Open files, as raw text or compressed text (gzip, bzip2 or xz)
     """
     name = str(name)
+    if encoding is None:
+        encoding = CHARSET_ENCODING
     if name == "-":
         return sys.stdout if mode.startswith("w") else sys.stdin
     elif name.endswith(".gz"):
-        return gzip.open(name, mode, encoding=CHARSET_ENCODING)
+        return gzip.open(name, mode, encoding=encoding)
     elif name.endswith(".bz2"):
-        return bz2.open(name, mode, encoding=CHARSET_ENCODING)
+        return bz2.open(name, mode, encoding=encoding)
     elif name.endswith(".xz"):
-        return lzma.open(name, mode, encoding=CHARSET_ENCODING)
+        return lzma.open(name, mode, encoding=encoding)
     else:
-        return open(name, mode, encoding=CHARSET_ENCODING)
+        return open(name, mode, encoding=encoding)
 
 
 def load_yaml(filename: str) -> Dict:

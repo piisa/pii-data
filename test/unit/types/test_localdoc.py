@@ -4,6 +4,7 @@ Test the LocalSrcDocument class
 
 
 from pathlib import Path
+from types import MappingProxyType
 import tempfile
 
 from unittest.mock import Mock
@@ -11,25 +12,21 @@ import pytest
 
 
 from pii_data.helper.io import load_yaml
+from pii_data.helper.exception import InvalidDocument
 import pii_data.types.document as doc
 import pii_data.types.localdoc as mod
 
 
-def fname(name: str) -> str:
-    return Path(__file__).parents[2] / "data" / name
-
-
-def readfile(name: str) -> str:
-    with open(name, "rt", encoding="utf-8") as f:
-        return f.read().strip()
-
+DATADIR = Path(__file__).parents[2] / "data"
 
 SIMPLEDOC = [
     "an example text",
     "another example text"
 ]
 
-# ----------------------------------------------------------------
+def readfile(name: str) -> str:
+    with open(name, "rt", encoding="utf-8") as f:
+        return f.read().strip()
 
 @pytest.fixture
 def fix_uuid(monkeypatch):
@@ -41,21 +38,24 @@ def fix_uuid(monkeypatch):
     monkeypatch.setattr(doc, 'uuid', mock_uuid)
 
 
+# ----------------------------------------------------------------
+
 def test100_constructor(fix_uuid):
     """Test object creation"""
-    obj = mod.LocalSrcDocument()
+    obj = mod.BaseLocalSrcDocument()
     assert str(obj) == "<SrcDocument 00000-11111>"
 
 
 def test110_constructor():
     """Test object creation, data"""
-    obj = mod.LocalSrcDocument(document_header={"id": "doc1"}, chunks=SIMPLEDOC)
+    meta = {"document": {"id": "doc1"}}
+    obj = mod.BaseLocalSrcDocument(chunks=SIMPLEDOC, metadata=meta)
     assert str(obj) == "<SrcDocument doc1>"
 
 
 def test120_set():
     """Test object creation, data"""
-    obj = mod.LocalSrcDocument()
+    obj = mod.BaseLocalSrcDocument()
     obj.set_id("doc1")
     obj.set_chunks(SIMPLEDOC)
     assert str(obj) == "<SrcDocument doc1>"
@@ -63,16 +63,27 @@ def test120_set():
 
 def test130_set_id_path():
     """Test object creation, set_id_path"""
-    obj = mod.LocalSrcDocument()
+    obj = mod.BaseLocalSrcDocument()
     obj.set_id_path("doc2")
     assert str(obj) == "<SrcDocument doc2>"
     obj.set_id_path("/base/data/doc2", "/base")
     assert str(obj) == "<SrcDocument data/doc2>"
 
 
-def test200_iter():
-    """Test object iteration"""
-    obj = mod.LocalSrcDocument(chunks=SIMPLEDOC)
+def test200_iter_struct():
+    """Test object struct iteration"""
+    obj = mod.BaseLocalSrcDocument(chunks=SIMPLEDOC)
+    got = list(obj.iter_struct())
+    exp = [
+        {"id": "1", "data": "an example text"},
+        {"id": "2", "data": "another example text"}
+    ]
+    assert exp == got
+
+
+def test250_iter_full():
+    """Test object full iteration"""
+    obj = mod.BaseLocalSrcDocument(chunks=SIMPLEDOC)
     got = list(obj)
     exp = [
         mod.DocumentChunk("1", "an example text"),
@@ -81,9 +92,9 @@ def test200_iter():
     assert exp == got
 
 
-def test210_dump(fix_uuid):
-    """Test object dump"""
-    obj = mod.LocalSrcDocument(chunks=SIMPLEDOC)
+def test300_dump(fix_uuid):
+    """Test object dump, plain"""
+    obj = mod.BaseLocalSrcDocument(chunks=SIMPLEDOC)
     try:
         f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
         obj.dump(f.name)
@@ -92,18 +103,59 @@ def test210_dump(fix_uuid):
         Path(f.name).unlink()
 
     exp = {
+        'format': 'piisa:src-document:v1',
         'header': {
             'document': {'id': '00000-11111'}
         },
-        'chunks': ['an example text', 'another example text']
+        'chunks': [
+            {'id': '1', 'data': 'an example text'},
+            {'id': '2', 'data': 'another example text'}
+        ]
     }
     assert exp == got
 
 
-def test300_load_dump(fix_uuid):
+def test310_dump_sequence(fix_uuid):
+    """Test object dump, sequence"""
+    obj = mod.SequenceLocalSrcDocument(chunks=SIMPLEDOC)
+    try:
+        f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
+        obj.dump(f.name)
+        got = load_yaml(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    exp = {
+        'format': 'piisa:src-document:v1',
+        'header': {
+            'document': {'id': '00000-11111', 'type': 'sequence'}
+        },
+        'chunks': [
+            {'id': '1', 'data': 'an example text'},
+            {'id': '2', 'data': 'another example text'}
+        ]
+    }
+    assert exp == got
+
+
+def test400_load_dump_sequential():
+    """Test object load + dump, sequential"""
+    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml")
+    try:
+        f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
+        obj.dump(f.name)
+        got = load_yaml(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    exp = load_yaml(DATADIR / "doc-example-seq-id.yaml")
+    assert exp == got
+
+
+def test410_load_dump_tree(fix_uuid):
     """Test object load/dump, tree document"""
 
-    obj = mod.load_file(fname("doc-example-tree.yaml"))
+    obj = mod.load_file(DATADIR / "doc-example-tree.yaml")
 
     # Dump to a YAML file, and load it back
     try:
@@ -113,14 +165,14 @@ def test300_load_dump(fix_uuid):
     finally:
         Path(f.name).unlink()
 
-    exp = load_yaml(fname('doc-example-tree-id.yaml'))
+    exp = load_yaml(DATADIR / 'doc-example-tree-id.yaml')
     assert exp == got
 
 
-def test310_load_dump_id_path(fix_uuid):
-    """Test object load/dump, tree document"""
+def test420_load_dump_tree_id_path():
+    """Test object load/dump, tree document, path_prefix"""
 
-    name = fname("doc-example-tree.yaml")
+    name = DATADIR / "doc-example-tree.yaml"
     obj = mod.load_file(name)
     obj.set_id_path(name, path_prefix=name.parents[1])
 
@@ -132,13 +184,17 @@ def test310_load_dump_id_path(fix_uuid):
     finally:
         Path(f.name).unlink()
 
-    exp = load_yaml(fname('doc-example-tree-id-path.yaml'))
+    exp = load_yaml(DATADIR / 'doc-example-tree-id-path.yaml')
     assert exp == got
 
 
-def test400_sequential(fix_uuid):
-    """Test sequential object dump"""
-    obj = mod.SequentialLocalSrcDocument(chunks=SIMPLEDOC)
+def test430_load_dump_tree_class(fix_uuid):
+    """Test object load/dump, tree document, class API"""
+
+    obj = mod.LocalSrcDocument(DATADIR / "doc-example-tree.yaml")
+    assert isinstance(obj, mod.TreeLocalSrcDocument)
+
+    # Dump to a YAML file, and load it back
     try:
         f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
         obj.dump(f.name)
@@ -146,11 +202,91 @@ def test400_sequential(fix_uuid):
     finally:
         Path(f.name).unlink()
 
-    exp = {
-        'header': {
-            'document': {'id': '00000-11111', 'type': 'sequential'}
-        },
-        'chunks': ['an example text', 'another example text']
-    }
+    exp = load_yaml(DATADIR / 'doc-example-tree-id.yaml')
     assert exp == got
 
+
+def test430_load_dump_error(fix_uuid):
+    """Test loading an invalid file"""
+
+    with pytest.raises(InvalidDocument):
+        mod.LocalSrcDocument(DATADIR / "doc-example-err.yaml")
+
+
+def test500_iter():
+    """Test object iteration"""
+    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml")
+    got = list(obj)
+
+    assert len(got) == 19
+
+    exp = [
+        mod.DocumentChunk("1", "PII management specification"),
+        mod.DocumentChunk("2", "Some rough initial ideas"),
+        mod.DocumentChunk("3", "Overall architecture")
+    ]
+    for e, g in zip(exp, got):
+        assert e == g
+
+
+def test510_iter_context():
+    """Test object iteration, iteration options"""
+    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml",
+                        iter_options={"context": True})
+    got = list(obj)
+
+    assert len(got) == 19
+
+    doc = MappingProxyType({"id": "00000-11111", "type": "sequence"})
+    exp = [
+        mod.DocumentChunk(
+            "1", "PII management specification",
+            {"document": doc, "after": "Some rough initial ideas"}
+        ),
+        mod.DocumentChunk(
+            "2", "Some rough initial ideas",
+            {"document": doc, "before": "PII management specification",
+             "after": "Overall architecture"}
+        ),
+        mod.DocumentChunk(
+            "3", "Overall architecture",
+            {"document": doc,
+             "before": "Some rough initial ideas",
+             "after": "The general structure of a framework dealing with PII management could be visualized as the following diagram:"}
+        )
+    ]
+    for e, g in zip(exp, got):
+        print(e, g)
+        assert e == g
+
+
+
+def test600_metadata():
+    """Test read, add metadata"""
+    meta = {"document": {"foo": "bar"}}
+    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml", metadata=meta)
+    got = obj.metadata
+    exp = MappingProxyType({
+        "document": {
+            "foo": "bar",
+            "id": "00000-11111",
+            "type": "sequence"
+        }
+    })
+    assert exp == got
+
+
+def test610_metadata_class():
+    """Test read, add metadata, class object"""
+    meta = {"document": {"foo": "bar"}}
+    obj = mod.LocalSrcDocument(DATADIR / "doc-example-seq-id.yaml",
+                               metadata=meta)
+    got = obj.metadata
+    exp = MappingProxyType({
+        "document": {
+            "foo": "bar",
+            "id": "00000-11111",
+            "type": "sequence"
+        }
+    })
+    assert exp == got

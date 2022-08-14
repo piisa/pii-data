@@ -18,7 +18,7 @@ SIMPLEDOC = [
 
 class ExampleSrcDoc(mod.SrcDocument):
     """A child class for testing purposes"""
-    def get_chunks(self):
+    def iter_base(self):
         return iter(SIMPLEDOC)
 
 
@@ -51,7 +51,7 @@ def test110_set():
 def test120_set_hdr():
     """Test object creation, set header"""
     obj = mod.SrcDocument()
-    obj.set_header_document({"id": "doc2"})
+    obj.add_metadata(document={"id": "doc2"})
     assert str(obj) == "<SrcDocument doc2>"
 
 
@@ -80,7 +80,7 @@ def test200_iter():
 def test210_iter_ctx(fix_uuid):
     """Test iteration, with context"""
 
-    obj = ExampleSrcDoc(add_chunk_context=True)
+    obj = ExampleSrcDoc(iter_options={"context": True})
     got = list(obj)
 
     exp = [
@@ -102,7 +102,7 @@ def test211_iter_ctx(fix_uuid):
     """Test iteration, with context, explicit method"""
 
     obj = ExampleSrcDoc()
-    got = obj.iter_chunks(add_context=True)
+    got = obj.iter_full(context=True)
 
     exp = [
         mod.DocumentChunk(id="1", data="an example text",
@@ -122,8 +122,8 @@ def test211_iter_ctx(fix_uuid):
 def test220_iter_ctx_doc(fix_uuid):
     """Test iteration, with document & chunk context"""
 
-    hdr = {"main_lang": "en", "id": "doc33"}
-    obj = ExampleSrcDoc(document_info=hdr, add_chunk_context=True)
+    hdr = {"document": {"main_lang": "en", "id": "doc33"}}
+    obj = ExampleSrcDoc(metadata=hdr, iter_options={"context": True})
     got = list(obj)
 
     exp = [
@@ -144,7 +144,8 @@ def test220_iter_ctx_doc(fix_uuid):
 def test230_iter_metadata():
     """Test iteration, w/ metadata"""
 
-    obj = ExampleSrcDoc({"id": "doc44"}, add_chunk_context=True)
+    meta = {"document": {"id": "doc44"}}
+    obj = ExampleSrcDoc(metadata=meta, iter_options={"context": True})
     obj.add_metadata(document={"main_lang": "en"}, dataset={"name": "BigDataset"})
     got = list(obj)
 

@@ -1,3 +1,4 @@
+format: 'piisa:src-document:v1'
 header:
   document:
     id: "00000-11111"

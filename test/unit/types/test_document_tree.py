@@ -1,7 +1,7 @@
 """
 Test the TreeSrcDocument class
 """
-
+from types import MappingProxyType
 
 from unittest.mock import Mock
 import pytest
@@ -36,12 +36,9 @@ TREEDOC = [
 
 class ExampleTreeSrcDoc(mod.TreeSrcDocument):
     """A child class for testing purposes"""
-    def top_chunks(self):
+    def iter_base(self):
         return iter(TREEDOC)
 
-
-
-# ----------------------------------------------------------------
 
 @pytest.fixture
 def fix_uuid(monkeypatch):
@@ -53,6 +50,7 @@ def fix_uuid(monkeypatch):
     monkeypatch.setattr(mod, "uuid", mock_uuid)
 
 
+# ----------------------------------------------------------------
 
 def test100_constructor(fix_uuid):
     """Test object creation"""
@@ -67,62 +65,72 @@ def test120_set():
     assert str(obj) == "<SrcDocument doc1>"
 
 
-def test120_set_hdr():
+def test121_set_hdr():
     """Test object creation, set header"""
     obj = mod.TreeSrcDocument()
-    obj.set_header_document({"id": "doc2"})
+    obj.add_metadata(document={"id": "doc2"})
     assert str(obj) == "<SrcDocument doc2>"
 
 
-def test200_iter():
-    """Test iteration"""
+def test200_iter_struct():
+    """Test struct iteration"""
+
+    obj = ExampleTreeSrcDoc()
+
+    exp = [{**e, "id": f"{n}"} for n, e in enumerate(TREEDOC, start=1)]
+    got = list(obj.iter_struct())
+    assert exp == got
+
+
+def test300_iter_full():
+    """Test full iteration"""
 
     obj = ExampleTreeSrcDoc()
 
     exp = [
         mod.DocumentChunk(id='1', data='section 1', context=None),
-        mod.DocumentChunk(id='2', data='subsection 1.1', context=None),
-        mod.DocumentChunk(id='3', data='subsection 1.2', context=None),
-        mod.DocumentChunk(id='4', data='section 2', context=None),
-        mod.DocumentChunk(id='5', data='subsection 2.1', context=None),
-        mod.DocumentChunk(id='6', data='subsection 2.1.1', context=None),
-        mod.DocumentChunk(id='7', data='section 3', context=None)
+        mod.DocumentChunk(id='1.1', data='subsection 1.1', context=None),
+        mod.DocumentChunk(id='1.2', data='subsection 1.2', context=None),
+        mod.DocumentChunk(id='2', data='section 2', context=None),
+        mod.DocumentChunk(id='2.1', data='subsection 2.1', context=None),
+        mod.DocumentChunk(id='2.1.1', data='subsection 2.1.1', context=None),
+        mod.DocumentChunk(id='3', data='section 3', context=None)
     ]
     got = list(obj)
     assert exp == got
 
 
-def test210_iter_ctx(fix_uuid):
-    """Test iteration, with context"""
+def test310_iter_ctx(fix_uuid):
+    """Test full iteration, with context"""
 
-    obj = ExampleTreeSrcDoc(add_chunk_context=True)
+    obj = ExampleTreeSrcDoc(iter_options={"context": True})
 
-    ctx_doc = {'id': '00000-11111'}
+    ctx_doc = MappingProxyType({'id': '00000-11111'})
     exp = [
         mod.DocumentChunk(id='1', data='section 1',
                           context={'document': ctx_doc,
                                    'after': 'subsection 1.1'}),
-        mod.DocumentChunk(id='2', data='subsection 1.1',
+        mod.DocumentChunk(id='1.1', data='subsection 1.1',
                           context={'document': ctx_doc,
                                    'before': 'section 1',
                                    'after': 'subsection 1.2'}),
-        mod.DocumentChunk(id='3', data='subsection 1.2',
+        mod.DocumentChunk(id='1.2', data='subsection 1.2',
                           context={'document': ctx_doc,
                                    'before': 'subsection 1.1',
                                    'after': 'section 2'}),
-        mod.DocumentChunk(id='4', data='section 2',
+        mod.DocumentChunk(id='2', data='section 2',
                           context={'document': ctx_doc,
                                    'before': 'subsection 1.2',
                                    'after': 'subsection 2.1'}),
-        mod.DocumentChunk(id='5', data='subsection 2.1',
+        mod.DocumentChunk(id='2.1', data='subsection 2.1',
                           context={'document': ctx_doc,
                                    'before': 'section 2',
                                    'after': 'subsection 2.1.1'}),
-        mod.DocumentChunk(id='6', data='subsection 2.1.1',
+        mod.DocumentChunk(id='2.1.1', data='subsection 2.1.1',
                           context={'document': ctx_doc,
                                    'before': 'subsection 2.1',
                                    'after': 'section 3'}),
-        mod.DocumentChunk(id='7', data='section 3',
+        mod.DocumentChunk(id='3', data='section 3',
                           context={'document': ctx_doc,
                                    'before': 'subsection 2.1.1'})]
 

@@ -1,41 +1,50 @@
 """
-Some subclasses of SrcDocument that can read/write data from/to a local file.
+Some subclasses of SrcDocument intended to handle SrcDocuments holding local
+information
+  * read a YAML representation of the document from a local file, through the
+    load_file() wrapper function
+  * set the data source (as an iterator)
+  * dump the document to a local file (YAML, JSON, text)
 """
+
 from pathlib import Path
 
-from typing import Dict, Iterable, Union
+from typing import Dict, Iterable, Union, List
 
-from ..doc import dump_raw, dump_yaml
-from ..helper.exception import InvArgException, FileException, UnimplementedException
-from ..helper.io import load_datafile
+from ..defs import FMT_SRCDOCUMENT
+from ..doc import dump_text, dump_yaml
+from ..helper.exception import InvArgException, InvalidDocument
+from ..helper.io import load_datafile, base_extension
 
-from .document import SrcDocument, DocumentChunk, TreeSrcDocument
+from .document import SrcDocument, DocumentChunk, \
+    TreeSrcDocument, SequenceSrcDocument, TableSrcDocument, TYPE_META
 
-CHUNK_TYPE = Union[Dict, str]
+
+TYPE_CHUNK = Union[Dict, str, List]
 
 
-TYPES = {"SequentialLocalSrcDocument": "sequential",
+# Mapping of classes to document type (as added to metadata)
+TYPES = {"SequenceLocalSrcDocument": "sequence",
          "TreeLocalSrcDocument": "tree",
-         "TabularLocalSrcDocument": "tabular"}
+         "TableLocalSrcDocument": "table"}
 
 # --------------------------------------------------------------------------
 
 
-class LocalSrcDocument(SrcDocument):
+class BaseLocalSrcDocument(SrcDocument):
     """
-    A document that can be loaded/saved to a local file
+    A document that can be saved to a local file. It also offers base methods
+    to set its contents.
     """
 
-    def __init__(self, document_header: Dict = None,
-                 add_chunk_context: bool = False,
-                 chunks: Iterable[CHUNK_TYPE] = None):
+    def __init__(self, chunks: Iterable[TYPE_CHUNK] = None,
+                 iter_options: Dict = None, metadata: TYPE_META = None):
         """
-          :param document_header: document general information
-          :param add_chunk_context: add context information when iterating over
-            chunks
-          :param chunks: document chunks
+          :param chunks: set the document chunks
+          :param iter_options: set iteration options
+          :param metadata: document general information
         """
-        super().__init__(document_header, add_chunk_context)
+        super().__init__(iter_options=iter_options, metadata=metadata)
         self.set_chunks(chunks)
         dtype = TYPES.get(self.__class__.__name__)
         if dtype:
@@ -57,85 +66,133 @@ class LocalSrcDocument(SrcDocument):
         self.set_id(str(path))
 
 
-    def dump(self, outname: str, format: str = None, indent: int = 0):
-        """
-        Dump the document to an output file
-        """
-        if format is not None:
-            format = str(format).lower()
-        elif outname.endswith((".yml", ".yaml")):
-            format = "yml"
-        elif outname.endswith(".txt"):
-            format = "txt"
-        else:
-            raise InvArgException("unspecified format for: {}", outname)
-
-        data = {"header": self._meta, "chunks": list(self.get_chunks())}
-        if format in ("yaml", "yml"):
-            dump_yaml(data, outname, indent)
-        else:
-            dump_raw(data, outname, indent)
-
-
     def set_chunks(self, chunks: Iterable[Dict]):
+        """
+        Set the document chunks
+          :param chunks: an iterable producing either plain strings, or
+            dictionaries (which contain at least a `data` field)
+        """
         self._chk = chunks if chunks else None
 
 
-    def get_chunks(self) -> Iterable[DocumentChunk]:
+    def iter_base(self) -> Iterable[DocumentChunk]:
         """
-        Get an iterable over document chunks
+        Get an iterable over the document chunks
         """
+        #import json; print("LOCAL CHUNKS", json.dumps(self._chk, indent=2))
         return iter(self._chk)
 
 
-# --------------------------------------------------------------------------
-
-
-class TreeLocalSrcDocument(LocalSrcDocument, TreeSrcDocument):
-
-    def get_chunks_tree(self) -> Iterable[DocumentChunk]:
+    def dump(self, outname: str, format: str = None, indent: int = 0):
         """
-        Get an iterable over document chunks
+        Dump the document to an output file
+          :param outname: name of the output file
+          :param format: format to write the document in. Valid values are
+            "yml", "json", "txt". If not present, the format will try to be
+            deduced from the file extension
+          :param indent:
         """
-        for chunk in self._chk:
-            yield from self._yield_chunk(chunk)
+        dump_file(self, outname, format=format, indent=indent)
 
-
-class TabularLocalSrcDocument(LocalSrcDocument):
-    pass
-
-
-class SequentialLocalSrcDocument(LocalSrcDocument):
-    pass
 
 
 # --------------------------------------------------------------------------
 
 
-def load_file(filename: str,
-              add_chunk_context: bool = False) -> LocalSrcDocument:
+class TreeLocalSrcDocument(BaseLocalSrcDocument, TreeSrcDocument):
+    pass
+
+class TableLocalSrcDocument(BaseLocalSrcDocument, TableSrcDocument):
+    pass
+
+class SequenceLocalSrcDocument(BaseLocalSrcDocument, SequenceSrcDocument):
+    pass
+
+
+# --------------------------------------------------------------------------
+
+def dump_file(doc: SrcDocument, outname: str,
+              format: str = None, indent: int = 0):
+    """
+    Dump a document to an output file
+      :param outname: name of the ooutput file
+      :param format: format to write the document in. Valid values are
+        "yml", "json", "txt". If not present, the format will try to be
+        deduced from the file extension
+      :param indent:
+    """
+    ext = base_extension(outname)
+    if format is not None:
+        format = str(format).lower()
+    elif ext in (".yml", ".yaml"):
+        format = "yml"
+    elif ext == ".txt":
+        format = "txt"
+    else:
+        raise InvArgException("unspecified format for: {}", outname)
+
+    if format in ("yaml", "yml"):
+        dump_yaml(doc, outname, indent)
+    else:
+        dump_text(doc, outname, indent)
+
+
+
+def load_file(filename: str, iter_options: Dict = None,
+              metadata: TYPE_META = None) -> BaseLocalSrcDocument:
     """
     Load a document stored in a YAML file
      :param filename: full pathname of the document to load
-     :param add_chunk_context: when iterating over document chunks, add
-       context data to each chunk
+     :param iter_options: iteration options for the document
+     :param metadata: metadata to add to the document
      :return: a LocalSrcDocument subclass
     """
     data = load_datafile(filename)
 
-    # Get document type
+    # Check format
+    if "format" not in data:
+        raise InvalidDocument("Error: missing format indicator in {}", filename)
+    fmt = data.get("format")
+    if fmt != FMT_SRCDOCUMENT:
+        raise InvalidDocument(f"Error: invalid format {fmt} in {filename}")
+
+    # Fetch the document header & get document type
     hdr = data.get("header", {})
     dtype = hdr.get("document", {}).get("type")
+
+    # Update header with additional metadata, if passed
+    if metadata is not None:
+        for name, d in metadata.items():
+            if name not in hdr:
+                hdr[name] = d
+            else:
+                hdr[name].update(d)
 
     # Select the proper object type to create
     if dtype == "tree":
         Obj = TreeLocalSrcDocument
-    elif dtype == "tabular":
-        Obj = TabularLocalSrcDocument
+    elif dtype == "table":
+        Obj = TableLocalSrcDocument
     else:
-        Obj = SequentialLocalSrcDocument
+        Obj = SequenceLocalSrcDocument
 
     # Create object
-    doc = Obj(add_chunk_context=add_chunk_context, chunks=data.get("chunks"))
-    doc.add_metadata(**hdr)
-    return doc
+    return Obj(chunks=data.get("chunks"), metadata=hdr,
+               iter_options=iter_options)
+
+
+
+class LocalSrcDocument:
+    """
+    A dispatcher class that loads a SrcDocument stored in a local YAML file
+    """
+
+    def __new__(self, filename: str, iter_options: Dict = None,
+                metadata: TYPE_META = None):
+        """
+        Create the appropriate class for the YAML file
+          :param filename: name of the filename to rad
+          :param iter_options: iteration options for the object
+          :param metadata: metadata to add to the document
+        """
+        return load_file(filename, iter_options=iter_options, metadata=metadata)

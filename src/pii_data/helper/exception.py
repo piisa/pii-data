@@ -27,6 +27,13 @@ class ProcException(PiiDataException):
     pass
 
 
+class InvalidDocument(ProcException):
+    """
+    An document invalid for some reason
+    """
+    pass
+
+
 class FileException(ProcException):
     """
     An problem with a file

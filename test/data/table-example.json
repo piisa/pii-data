@@ -1,0 +1,161 @@
+[
+  {
+    "id": "1.1",
+    "data": "2021-03-01",
+    "context": {
+      "after": "John Smith",
+      "column": {"number": 1}
+    }
+  },
+  {
+    "id": "1.2",
+    "data": "John Smith",
+    "context": {
+      "before": "2021-03-01",
+      "after": "4273 9666 4581 5642",
+      "column": {"number": 2}}},
+  {
+    "id": "1.3",
+    "data": "4273 9666 4581 5642",
+    "context": {
+      "before": "John Smith",
+      "after": "USD",
+      "column": {"number": 3}
+    }
+  },
+  {
+    "id": "1.4",
+    "data": "USD",
+    "context": {
+      "before": "4273 9666 4581 5642",
+      "after": "12.39",
+      "column": {"number": 4}
+    }
+  },
+  {
+    "id": "1.5",
+    "data": "12.39",
+    "context": {
+      "before": "USD",
+      "after": "Our Iceberg Is Melting: Changing and Succeeding Under Any Conditions",
+      "column": {"number": 5}
+    }
+  },
+  {
+    "id": "1.6",
+    "data": "Our Iceberg Is Melting: Changing and Succeeding Under Any Conditions",
+    "context": {
+      "before": "12.39",
+      "after": "2022-09-10",
+      "column": {
+	"number": 6}
+    }
+  },
+  {
+    "id": "2.1",
+    "data": "2022-09-10",
+    "context": {
+      "before": "Our Iceberg Is Melting: Changing and Succeeding Under Any Conditions",
+      "after": "Erik Jonsk",
+      "column": {"number": 1}
+    }
+  },
+  {
+    "id": "2.2",
+    "data": "Erik Jonsk",
+    "context": {
+      "before": "2022-09-10",
+      "after": "4273 9666 4581 5642",
+      "column": {"number": 2}
+    }
+  },
+  {
+    "id": "2.3",
+    "data": "4273 9666 4581 5642",
+    "context": {
+      "before": "Erik Jonsk",
+      "after": "EUR",
+      "column": {"number": 3}
+    }
+  },
+  {
+    "id": "2.4",
+    "data": "EUR",
+    "context": {
+      "before": "4273 9666 4581 5642",
+      "after": "11.99",
+      "column": {"number": 4}
+    }
+  },
+  {
+    "id": "2.5",
+    "data": "11.99",
+    "context": {
+      "before": "EUR",
+      "after": "Bedtime Originals Choo Choo Express Plush Elephant - Humphrey",
+      "column": {"number": 5}
+    }
+  },
+  {
+    "id": "2.6",
+    "data": "Bedtime Originals Choo Choo Express Plush Elephant - Humphrey",
+    "context": {
+      "before": "11.99",
+      "after": "2022-09-11",
+      "column": {"number": 6}
+    }
+  },
+  {
+    "id": "3.1",
+    "data": "2022-09-11",
+    "context": {
+      "before": "Bedtime Originals Choo Choo Express Plush Elephant - Humphrey",
+      "after": "John Smith",
+      "column": {"number": 1}
+    }
+  },
+  {
+    "id": "3.2",
+    "data": "John Smith",
+    "context": {
+      "before": "2022-09-11",
+      "after": "4273 9666 4581 5642",
+      "column": {"number": 2}
+    }
+  },
+  {
+    "id": "3.3",
+    "data": "4273 9666 4581 5642",
+    "context": {
+      "before": "John Smith",
+      "after": "USD",
+      "column": {"number": 3}
+    }
+  },
+  {
+    "id": "3.4",
+    "data": "USD",
+    "context": {
+      "before": "4273 9666 4581 5642",
+      "after": "339.99",
+      "column": {"number": 4}
+    }
+  },
+  {
+    "id": "3.5",
+    "data": "339.99",
+    "context": {
+      "before": "USD",
+      "after": "Robot Vacuum Mary, Nobuk Robotic Vacuum Cleaner and Mop, 5000Pa Suction, Intelligent AI Mapping, Virtual Walls, Ideal for Pets Hair, Self-Charging, Carpets, Hard Floors, Tile, Wi-Fi, App Control",
+      "column": {"number": 5}
+    }
+  },
+  {
+    "id": "3.6",
+    "data": "Robot Vacuum Mary, Nobuk Robotic Vacuum Cleaner and Mop, 5000Pa Suction, Intelligent AI Mapping, Virtual Walls, Ideal for Pets Hair, Self-Charging, Carpets, Hard Floors, Tile, Wi-Fi, App Control",
+    "context": {
+      "before": "339.99",
+      "column": {"number": 6}
+    }
+  }
+]
