@@ -256,7 +256,6 @@ def test510_iter_context():
         )
     ]
     for e, g in zip(exp, got):
-        print(e, g)
         assert e == g
 
 

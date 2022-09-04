@@ -5,23 +5,16 @@ A base abstract class is provided, subclasses need to implement at least the
 get_chunks() method, producing an iterable of chunks.
 """
 
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 from types import MappingProxyType
 import uuid
 
-from typing import Dict, Iterable, Tuple, Callable
+from typing import Dict, Iterable, Callable
 
 from ..helper.exception import UnimplementedException
-
+from .chunker import DocumentChunk, ChunkGenerator, ContextChunkGenerator
 
 TYPE_META = Dict[str, Dict]
-
-
-# The contents of a document chunk:
-#  - a chunk id
-#  - the text content
-#  - a context for the chunk (optional)
-DocumentChunk = namedtuple("DocumentChunk", "id data context", defaults=[None])
 
 
 
@@ -89,29 +82,6 @@ class SrcDocument:
         return self.iter_full()
 
 
-    def _chunk(self, chunk: Tuple,
-               before: Tuple, after: Tuple) -> DocumentChunk:
-        """
-        Create a chunk object, with context
-        """
-        # Copy the base (document-level) context
-        ctx = self._ctx.copy()
-        # Add the before & after fields
-        if before:
-            ctx["before"] = before
-        if after:
-            ctx["after"] = after
-        # Split extra context
-        #print("CHUNK", chunk)
-        *chunk, extra_context = chunk
-        # Add any additional fields
-        if extra_context:
-            ctx.update(extra_context)
-        # Create the object
-        data = *chunk, ctx
-        return DocumentChunk(*data)
-
-
     def iter_full(self, context: bool = None,
                   chunk_iterator: Callable = None) -> Iterable[Dict]:
         """
@@ -122,54 +92,26 @@ class SrcDocument:
          :param chunk_iterator: the function providing base chunks. If not
            passed, the iter_flat() method will be used.
         """
-        do_context = context if context is not None else self._iter_options.get("context", False)
-        if do_context:
-            self._ctx = {k: MappingProxyType(v) for k, v in self._meta.items()}
+
         if chunk_iterator is None:
             chunk_iterator = self.iter_struct
 
-        before = current = None
+        # Create the chunker object
+        do_context = context if context is not None else self._iter_options.get("context", False)
+        cls = ContextChunkGenerator if do_context else ChunkGenerator
+        chunker = cls(meta=self._meta)
 
+        # Iterate over the document elements and build a chunk for each one
         for elem in chunk_iterator():
-
-            #print("ELEM", elem)
-
-            # If we have an already built DocumentChunk, deliver it
-            if isinstance(elem, DocumentChunk):
-                yield elem
-                continue
-
-            # Get chunk components (id, payload, additional context)
-            chunk_id = elem.get("id")
-            payload = elem["data"]
-            extra_context = elem.get("context") if do_context else None
-            if chunk_id is None:
-                self._chunk_id += 1
-                chunk_id = self._chunk_id
-            chunk = str(chunk_id), payload, extra_context
-
-            # Render without context
-            if not do_context:
-                yield DocumentChunk(*chunk)
-                continue
-
-            # Render with context: track the chunks before & after
-            if before is None:
-                before = chunk                                  # 1st chunk
-            elif current is None:
-                yield self._chunk(before, None, chunk[1])        # 2nd chunk
-                current = chunk
-            else:
-                yield self._chunk(current, before[1], chunk[1])    # 3rd and more
-                before = current
-                current = chunk
+            chunk = elem if isinstance(elem, DocumentChunk) else chunker(elem)
+            if chunk:
+                yield chunk
 
         # A pending last chunk?
         if do_context:
-            if current:
-                yield self._chunk(current, before[1], None)     # 2nd or more
-            elif before:
-                yield self._chunk(before, None, None)           # only 1 chunk
+            chunk = chunker(None)
+            if chunk:
+                yield chunk
 
 
     def iter_struct(self) -> Iterable[Dict]:
