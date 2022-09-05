@@ -76,7 +76,6 @@ def test200_iter_struct():
         for rn, row in enumerate(ROWS, start=1)
     ]
     got = list(obj.iter_struct())
-    print(got)
     assert exp == got
 
 
@@ -91,7 +90,6 @@ def test300_iter_full():
         for cn, e in enumerate(row, start=1)
     ]
     got = list(obj)
-    print(got)
     assert exp == got
 
 

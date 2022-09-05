@@ -79,6 +79,7 @@ reinstall: uninstall clean pkg install
 $(VENV):
 	BASE=$$(basename "$@"); test -d "$$BASE" || mkdir -p "$$BASE"
 	$(BASE_PYTHON) -m venv $@
+	$@/bin/pip install --upgrade pip
 	$@/bin/pip install wheel
 	$@/bin/pip install -r requirements.txt
 
