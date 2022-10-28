@@ -4,13 +4,8 @@ A PII Source Document defines the raw data from which PII is detected.
 A Source Document, as described in the [data specification], contains two
 elements:
  * a document header, containing global metadata
- * a number of *document chunks*, containing the document payload.
-
-The Python data structure for a document chunk is `DocumentChunk`, which
-is just a Python `namedtuple`, with up to three elements:
- * `id`: chunk identifier
- * `data`: the chunk contents (typically a raw unicode text blob).
- * `context`: contextual information associated to the chunk (optional)
+ * a number of *document chunks*, containing the document payload. The Python
+   data structure to manage a document chunk is [DocumentChunk]
 
 
 ## Document types
@@ -53,17 +48,34 @@ document types:
  * `TreeLocalSrcDocument`
  * `TableLocalSrcDocument`
 
-Finally, the `LocalSrcDocument` is a dispatcher class that can open and read
-any of those three classes of local source documents and return an object of
-the right class (after parsing the document header).
+Local documents have two means of acquiring their chunks:
+ * all in one step, via the `set_chunks()` method (or the equivalent parameter
+   in the constructor)
+ * incrementally, one at a time, via the `add_chunk()` method. In this case,
+   for documents with structure (tree, table), fields in the chunk context are
+   used to determine the chunk position within that structure.
+
+## Dispatcher classes
+
+Two wrapper classes can be used to abstract away the document variant:
+ * `LocalSrcDocument` is a dispatcher class that takes as its first argument
+   the document variant (`sequence`, `tree`, `table`) and creates a
+   `*LocalSrcDocument` of the appropriate class
+ * `LocalSrcDocumentFile` is a dispatcher class that takes as its first
+   argument a filename contianing a serialized document (see below), opens
+   and loads it and returns an object of the right class (after parsing the
+   document header).
+
+The `LocalSrcDocumentFile` class is only a thin wrapper around the
+`load_file()` dispatcher function, to make it a class object.
 
 
 ## File format
 
 The official dump representation of a PII Source Document is in the form of a
-YAML file. The package generates it using the [block literal style], to ease
-human reading.
+YAML file.
 
+The package generates it using the [block literal style], to ease human reading.
 However any valid YAML file will do for reading the file back. And a JSON
 representation would also be read by the package (since JSON is a subset
 of YAML anyway).
@@ -72,3 +84,4 @@ of YAML anyway).
 [data specification]: https://github.com/piisa/piisa/
 [block literal style]: https://yaml.org/spec/1.2.2/#812-literal-style
 [implement]: implementation.md
+[DocumentChunk]: chunks.md

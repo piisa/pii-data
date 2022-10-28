@@ -1,3 +1,18 @@
+v. 0.2.0
+ * DocumentChunk class refactored into a full class, with equality method and
+   as_dict()
+ * Refactored dump code; dump to JSON
+ * when dumping to JSON & YAML dump non-structural context fields (and skip
+   structural context)
+ * modified tree & sequence iteration: changed automatic id assignment
+ * new class method from_dict() in PiiInstance
+ * when reading a PiiCollection from file, recreate PiiInstance objects
+ * wrapper load() method for PiiCollectionLoader
+ * add_chunk() method for LocalSrcDocument objects (sequence, table & tree)
+ * new LocalSrcDocumentFile dispatcher class
+ * openfile: allow file-like objects as argument
+ * some bugfixes
+
 v. 0.1.0
  * updated for data spec 0.4.0
  * added two iterators

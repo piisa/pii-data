@@ -9,6 +9,7 @@ import gzip
 import bz2
 import lzma
 import json
+import io
 from yaml import load as yaml_load, SafeLoader as YamlLoader
 
 from typing import Dict, TextIO
@@ -24,7 +25,10 @@ def base_extension(name: str) -> str:
     Return the base file extension, once a (possible) compression extension
     has been removed
     """
-    name = Path(name)
+    if isinstance(name, str):
+        name = Path(name)
+    elif not isinstance(name, Path):
+        return ""
     sfx = name.suffix
     return Path(name.stem).suffix if sfx in ('.gz', '.bz2', '.xz') else sfx
 
@@ -33,16 +37,26 @@ def openfile(name: str, mode: str = 'rt', encoding: str = None) -> TextIO:
     """
     Open files, as raw text or compressed text (gzip, bzip2 or xz)
     """
-    name = str(name)
-    if encoding is None:
+    # Check if we've been given a file-like object; if so just return it
+    if mode.startswith("r") and hasattr(name, 'read') or \
+       mode.startswith(("w", "a")) and hasattr(name, "write"):
+        return name
+
+    # Decide on an encoding
+    sname = str(name)
+    if mode.endswith('b'):
+        encoding = None
+    elif encoding is None:
         encoding = CHARSET_ENCODING
-    if name == "-":
+
+    # Open with the right module
+    if sname == "-":
         return sys.stdout if mode.startswith("w") else sys.stdin
-    elif name.endswith(".gz"):
+    elif sname.endswith(".gz"):
         return gzip.open(name, mode, encoding=encoding)
-    elif name.endswith(".bz2"):
+    elif sname.endswith(".bz2"):
         return bz2.open(name, mode, encoding=encoding)
-    elif name.endswith(".xz"):
+    elif sname.endswith(".xz"):
         return lzma.open(name, mode, encoding=encoding)
     else:
         return open(name, mode, encoding=encoding)

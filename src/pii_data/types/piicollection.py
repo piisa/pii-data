@@ -5,11 +5,11 @@ A class to describe a list of detected PII entities
 from datetime import datetime, timezone
 import json
 
-from typing import TextIO, Dict
+from typing import TextIO, Dict, Iterator
 
-from .. import FORMAT_VERSION
 from ..helper.json_encoder import CustomJSONEncoder
-from ..helper.exception import InvArgException
+from ..helper.io import base_extension, openfile
+from ..helper.exception import InvArgException, ProcException, FileException
 from .piientity import PiiEntity
 from ..defs import FMT_PIICOLLECTION
 
@@ -71,13 +71,43 @@ class PiiCollection:
         if docid:
             self.defaults['docid'] = docid
 
-        # Encoder for generating NDJSON output
+        # An encoder for generating NDJSON output
         self.encoder = CustomJSONEncoder(ensure_ascii=False)
 
-        # Contained data
+        # Data contained in the object
         self.detectors = {}
         self.detector_map = {}
         self.pii = []
+
+        # Initialize the collection header
+        self._set_header({
+            "date": datetime.utcnow().replace(tzinfo=timezone.utc),
+            "format": FMT_PIICOLLECTION,
+            "lang": self.defaults.get("lang")
+        })
+
+
+    def _set_header(self, header: Dict):
+        self._header = header.copy()
+
+
+    def header(self) -> Dict:
+        """
+        Return the collection header
+        """
+        self._header["detectors"] = {k: v.as_dict()
+                                     for k, v in self.detectors.items()}
+        return self._header
+
+
+    def stage(self, value: str = None) -> str:
+        """
+        Return the processing stage for the collection status, and optionally
+        set it
+        """
+        if value:
+            self._header["stage"] = value
+        return self._header.get("stage")
 
 
     def __len__(self) -> int:
@@ -85,6 +115,14 @@ class PiiCollection:
         Return the number of PII instances in the object
         """
         return len(self.pii)
+
+
+    def __iter__(self) -> Iterator[PiiEntity]:
+        """
+        Return an iterator over the PII instances in the object
+        """
+        return iter(self.pii)
+
 
     def add_detector(self, detector: PiiDetector) -> str:
         """
@@ -94,6 +132,7 @@ class PiiCollection:
             num = len(self.detectors) + 1
             self.detectors[num] = detector
             self.detector_map[detector._id] = num
+        self.stage('detection')
         return self.detector_map[detector._id]
 
 
@@ -116,6 +155,15 @@ class PiiCollection:
         self.pii.append(entity)
 
 
+    def set_decision(self, info: Dict):
+        """
+        Set the decision information for the collection, and change the stage
+          :param info: decision information to add to the collection header
+        """
+        self._header["decision"] = info
+        self.stage("decision")
+
+
     def dump(self, out: TextIO, format: str = 'ndjson', **kwargs):
         """
         Dump the collection to an output destination
@@ -124,12 +172,7 @@ class PiiCollection:
         For `json` format, all passed additional arguments will be added to
         the JSON serializer
         """
-        header = {
-            'date': datetime.utcnow().replace(tzinfo=timezone.utc),
-            'format': FMT_PIICOLLECTION,
-            'format_version': FORMAT_VERSION,
-            'detectors': {k: v.as_dict() for k, v in self.detectors.items()}
-        }
+        header = self.header()
 
         if format == 'ndjson':
 
@@ -159,10 +202,6 @@ def check_format(metadata: Dict, source_name: str):
     if fmt != FMT_PIICOLLECTION:
         raise InvArgException('invalid format "{}" found in {}',
                               fmt, source_name)
-    ver = metadata.get('format_version')
-    if ver != FORMAT_VERSION:
-        raise InvArgException('invalid format version "{}" found in {}',
-                              fmt, source_name)
 
 
 class PiiCollectionLoader(PiiCollection):
@@ -171,7 +210,10 @@ class PiiCollectionLoader(PiiCollection):
     """
 
     def _load_detectors(self, detectors: Dict) -> Dict:
-        self.detectors = {k: PiiDetector(**v) for k, v in detectors.items()}
+        try:
+            self.detectors = {k: PiiDetector(**v) for k, v in detectors.items()}
+        except Exception as e:
+            raise ProcException("error reading detector info from header: {}", e)
         self.detector_map = {v._id: k for k, v in self.detectors.items()}
 
 
@@ -179,19 +221,43 @@ class PiiCollectionLoader(PiiCollection):
         """
         Load a PiiCollection from a JSON file
         """
-        with open(filename, encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with openfile(filename, encoding='utf-8') as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise FileException("cannot load collection '{}': {}", filename,
+                                e) from e
         meta = data['metadata']
         check_format(meta, filename)
+        self._set_header(meta)
         self._load_detectors(meta['detectors'])
-        self.pii = data['pii_list']
+        self.pii = [PiiEntity.from_dict(d) for d in data['pii_list']]
 
 
     def load_ndjson(self, src: TextIO):
         """
         Load a PiiCollection from a file-like source contianing NDJSON data
         """
+        # Read first line (collection header)
         header = json.loads(next(src))
         check_format(header, 'ndjson source')
+        self._set_header(header)
         self._load_detectors(header['detectors'])
-        self.pii = [json.loads(line) for line in src]
+
+        # Read all PII instances
+        self.pii = [PiiEntity.from_dict(json.loads(line)) for line in src]
+
+
+    def load(self, filename: str):
+        """
+        Load either an NDJSON or JSON file containing serialized PII entities
+        """
+        base_ext = base_extension(filename)
+        if base_ext == ".json":
+            self.load_json(filename)
+        elif base_ext == ".ndjson":
+            with openfile(filename, encoding="utf-8") as f:
+                self.load_ndjson(f)
+        else:
+            raise FileException("unsupported format for PiiCollection: {}",
+                                base_ext)

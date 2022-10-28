@@ -1,0 +1,14 @@
+format: piisa:src-document:v1
+header:
+  document:
+    id: doc3
+    type: table
+chunks:
+- id: 0
+  data:
+  - an example text
+  - another example text
+- id: 1
+  data:
+  - a third text
+  - and yet another

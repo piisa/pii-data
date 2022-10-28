@@ -7,7 +7,7 @@ documents:
  * iterators: 
      - the `iter_full()` method: a _full_ chunk iterator (the object default
 	   iterator is an alias to this method). This method generates
-	   `DocumentChunk` objects.
+	   [DocumentChunk] objects.
 	 - the `iter_struct()` method: a _native_ structured iterator, whose
 	   output shows more of the document structure. This method produces
 	   a Python dictionary for each chunk:
@@ -31,14 +31,14 @@ to create a fully functioning class, it is necessary:
 
 This method must return an iterator that will produce data according to the
 _native_ data structure. In general the method can deliver, for each iteration: 
- - either a dictionary, containing at least a `data` field (which has the 
+ - either a dictionary, containing at least a `data` field (which contains the 
    chunk payload)
  - or an arbitrary object (e.g. a plain string) representing the payload
    directly. It will then be wrapped around to produce the dictionary
    
 Depending on the document type, there are particularities:
  - Sequence documents must produce a linear sequence of chunks, in either of
-   the two formats mentiones above
+   the two formats mentioned above
  - Table document must produce document rows, in also either of the two
    formats: in this case either a list directly containing the row, or a 
    dictionary with a `data` field containing the row as a list
@@ -60,24 +60,24 @@ is provided as:
    type, and in general it should be considered as an opaque string
 
 Note that the two top-level iterators, `iter_full()` and `iter_struct()`, 
-will chunk information in different ways (with the exception of the Sequence
-documents) and will produce _different_ identifiers.
+will chunk information in different ways (with the exception of Sequence
+documents) and might produce _different_ identifiers.
 
 
 ## _local_ classes
 
-A variant of the `SrcDocumet` is the `LocalSrcDocument` class (and
-associated subclasses; there is one for each of the base classes.
+A variant of the `SrcDocument` is the `LocalSrcDocument` class (and
+associated subclasses; there is one for each of the base classes). A new local
+document class can then inherit from them.
 
-The additional functionality provided by this _extra_ base classes is:
+The additional functionality provided by these _extra_ base classes is:
 
 * the capability to explicitly set the list of chunks for the document, either
-  in the constructor or in an additional `set_chunks()` method
-* dump the document to a local YAML file
-
-Finally, there is an additional `load_file()` dispatcher function that can
-_load_ a YAML file (in the format created by the dump functionality) and
-re-create the appropriate `LocalSrcDocument`  subclass.
+	- in the constructor, or
+	- in an additional `set_chunks()` method, or
+	- incrementally, via `add_chunks()`
+* a simple `iter_base()` method
+* a `dump()` method to write the document to a local YAML file
 
 
 ### Subclassing the local classes
@@ -85,3 +85,6 @@ re-create the appropriate `LocalSrcDocument`  subclass.
 If a subclass is done from one of the local classes instead of a base class,
 then the object gains the set/dump functionality of the local class. Other
 than that, the mechanics are the same.
+
+
+[DocumentChunk]: chunks.md

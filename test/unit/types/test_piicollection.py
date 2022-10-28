@@ -67,8 +67,8 @@ def test210_piicollection_add():
     assert len(obj) == 1
 
 
-def test220_piicollection_dump_ndjson(fix_timestamp):
-    """Test NDJSON dump"""
+def test220_piicollection_dump_json(fix_timestamp):
+    """Test JSON dump"""
     obj = mod.PiiCollection(lang="pt", docid="doc1")
 
     det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
@@ -90,7 +90,6 @@ def test220_piicollection_dump_ndjson(fix_timestamp):
     exp = readfile(fname('piicollection.json'))
     assert json.loads(exp) == json.loads(got)
 
-
     #with open(fname('piicollection.ndjson'), "w", encoding="utf-8") as f:
     #          obj.dump(f, format="ndjson")
 
@@ -100,7 +99,10 @@ def test300_piicollection_load_json(fix_timestamp):
 
     obj = mod.PiiCollectionLoader()
     obj.load_json(fname('piicollection.json'))
+
     assert len(obj) == 2
+    for pii in obj:
+        assert isinstance(pii, PiiEntity)
 
     # Dump again to file
     try:
@@ -112,16 +114,20 @@ def test300_piicollection_load_json(fix_timestamp):
 
     # Check that the dumped file has the same data
     exp = readfile(fname('piicollection.json'))
+    #print(json.loads(got))
     assert json.loads(exp) == json.loads(got)
 
 
-def test310_piicollection_load_json(fix_timestamp):
+def test310_piicollection_load_ndjson(fix_timestamp):
     """Test NDJSON load"""
 
     obj = mod.PiiCollectionLoader()
     with open(fname('piicollection.ndjson'), encoding='utf-8') as f:
         obj.load_ndjson(f)
+
     assert len(obj) == 2
+    for pii in obj:
+        assert isinstance(pii, PiiEntity)
 
     # Dump again to file
     try:

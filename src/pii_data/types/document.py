@@ -9,7 +9,7 @@ from collections import defaultdict
 from types import MappingProxyType
 import uuid
 
-from typing import Dict, Iterable, Callable
+from typing import Dict, Iterable, Callable, Iterator
 
 from ..helper.exception import UnimplementedException
 from .chunker import DocumentChunk, ChunkGenerator, ContextChunkGenerator
@@ -87,8 +87,8 @@ class SrcDocument:
         """
         Iterate over the document, producing a sequence of individual
         DocumentChunk objects
-         :param context: add context information to each chunk (this will modify
-           the generic object config)
+         :param context: add additional context information to each chunk (this
+           modifies the default option in the object constructor)
          :param chunk_iterator: the function providing base chunks. If not
            passed, the iter_flat() method will be used.
         """
@@ -131,13 +131,13 @@ class SrcDocument:
             yield chunk
 
 
-    def iter_base(self) -> Iterable[Dict]:
+    def iter_base(self) -> Iterator[Dict]:
         """
-        The method to be implemented by subclasses. When iterated, it
-        should return a sequence of chunks. Each chunk can be:
+        The base iteration method to be implemented by subclasses. When executed
+        it should return a sequence of chunks. Each chunk can be:
           * a dictionary-like object, containing at least a "data" field, and
             (optionally) an "id" field
-          * a chunk payload (any data structure, except the two above)
+          * a chunk payload (any data structure, except the one above)
         """
         raise UnimplementedException("abstract document class: missing iter_base() method")
 
@@ -160,8 +160,8 @@ class TreeSrcDocument(SrcDocument):
     A tree document, as an abstract class.
     """
 
-    def _yield_chunks(self, chunk: Dict, num: int, prefix: str,
-                      context: str = None) -> Iterable[Dict]:
+    def _yield_subtree(self, chunk: Dict, num: int, level: int, prefix: str,
+                       context: str = None, src: bool = False) -> Iterable[Dict]:
         """
         Return all the chunks stemming from an element in the document
         tree, as a linear sequence
@@ -172,15 +172,17 @@ class TreeSrcDocument(SrcDocument):
 
         # Produce *this* chunk (if it contains data)
         if data:
-            obj = {"id": f"{prefix}{num}", "data": data}
-            if ctx:
-                obj['context'] = ctx
+            obj = {"id": chunk.get("id", f"{prefix}{num}"), "data": data}
+            if src:
+                obj["src"] = chunk
+            obj["context"] = ctx.copy() if ctx else {}
+            obj["context"]["level"] = level
             yield obj
 
         # Produce child chunks
         subprefix = f"{prefix}{num}."
         for n, subchunk in enumerate(chunk.get("chunks", []), start=1):
-            yield from self._yield_chunks(subchunk, n, subprefix, ctx)
+            yield from self._yield_subtree(subchunk, n, level+1, subprefix, ctx)
 
 
     def _recurse_tree(self) -> Iterable[Dict]:
@@ -189,7 +191,7 @@ class TreeSrcDocument(SrcDocument):
         deep-first
         """
         for n, chunk in enumerate(self.iter_base(), start=1):
-            yield from self._yield_chunks(chunk, n, "")
+            yield from self._yield_subtree(chunk, n, level=0, prefix="")
 
 
     def iter_full(self, context: bool = None) -> Iterable[Dict]:
@@ -216,11 +218,15 @@ class TableSrcDocument(SrcDocument):
         colnames = header.get("column", {}).get("name")
         for r, row in enumerate(self.iter_base(), start=1):
             rowdata = row.get("data", [])
+            rowid = row.get("id", r)
             for c, cell in enumerate(rowdata, start=1):
                 data = {
-                    "id": f"{r}.{c}",
+                    "id": f"{rowid}.{c}",
                     "data": cell,
-                    "context": {"column": {"number": c}}
+                    "context": {
+                        "column": {"number": c},
+                        "row": rowid
+                    }
                 }
                 if colnames:
                     data["context"]["column"]["name"] = colnames[c-1]

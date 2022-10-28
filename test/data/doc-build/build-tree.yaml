@@ -1,0 +1,20 @@
+format: piisa:src-document:v1
+header:
+  document:
+    id: doc2
+    type: tree
+chunks:
+- id: '1'
+  data: |-
+    an example text
+  chunks:
+  - id: '2'
+    data: |-
+      another example text
+    chunks:
+    - id: '3'
+      data: |-
+        a third text
+  - id: '4'
+    data: |-
+      and yet another

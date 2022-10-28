@@ -7,16 +7,18 @@ from argparse import ArgumentParser, Namespace
 from ..helper import load_yaml
 from ..helper.io import base_extension
 from ..doc import dump_text, dump_yaml
-from ..types.localdoc import LocalSrcDocument
+from ..types.localdoc import LocalSrcDocumentFile
 
 
 # --------------------------------------------------------------------------
 
 def parse_args():
-    args = ArgumentParser(description='Convert from YAML PII Source Doc to plain raw text or viceversa')
+    args = ArgumentParser(description='Read a YAML PII Source Doc and write it out (to either YAML or to plain raw text')
     args.add_argument('inputdoc')
-    args.add_argument('outputdoc')
-    args.add_argument('--indent', type=int, default=0)
+    args.add_argument('outputdoc', help="output file (the file extension will decide the format)")
+    args.add_argument('--indent', type=int, default=0, help="for tree documents and plain text output, the indent for each level")
+    args.add_argument('--context-fields', nargs="+",
+                      help="context fields to add")
     return args.parse_args()
 
 
@@ -26,12 +28,12 @@ def main(args: Namespace = None):
         args = parse_args()
 
     # Read document
-    doc = LocalSrcDocument(args.inputdoc)
+    doc = LocalSrcDocumentFile(args.inputdoc)
 
     # Write it
     ext2 = base_extension(args.outputdoc)
     if ext2 in ('.yml', '.yaml'):
-        dump_yaml(doc, args.outputdoc)
+        dump_yaml(doc, args.outputdoc, context_fields=args.context_fields)
     else:
         dump_text(doc, args.outputdoc, args.indent)
 

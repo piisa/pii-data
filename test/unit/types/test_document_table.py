@@ -90,7 +90,12 @@ def test300_iter_full():
         for cn, e in enumerate(row, start=1)
     ]
     got = list(obj)
-    assert exp == got
+
+    # We check chunk contents, since the final chunks have additional contexts
+    for e, g in zip(exp, got):
+        assert e.id == g.id
+        assert e.data == g.data
+        assert sorted(g.context.keys()) == ["column", "row"]
 
 
 def test310_iter_full_ctx(fix_uuid):
@@ -106,8 +111,14 @@ def test310_iter_full_ctx(fix_uuid):
     for e in exp:
         e.context["document"] = ctx_doc
 
-    got = list(obj)
-    assert exp == got
+    # We check chunk contents, since the final chunks have additional contexts
+    for n, (e, g) in enumerate(zip(exp, list(obj))):
+        assert e.id == g.id
+        assert e.data == g.data
+        cols = ["after", "column", "document", "row"] if n == 0 else \
+            ["before", "column", "document", "row"] if n == len(exp)-1 else \
+            ["after", "before", "column", "document", "row"]
+        assert sorted(g.context.keys()) == cols
 
 
 def test320_iter_full_ctx_name(fix_uuid):
@@ -125,6 +136,12 @@ def test320_iter_full_ctx_name(fix_uuid):
         e.context["document"] = ctx_doc
         e.context["column"]["name"] = c
 
+    # We check chunk contents, since the final chunks have additional contexts
     got = list(obj)
-    assert exp[0] == got[0]
-    assert exp == got
+    for n, (e, g) in enumerate(zip(exp, got)):
+        assert e.id == g.id
+        assert e.data == g.data
+        cols = ["after", "column", "document", "row"] if n == 0 else \
+            ["before", "column", "document", "row"] if n == len(exp)-1 else \
+            ["after", "before", "column", "document", "row"]
+        assert sorted(g.context.keys()) == cols

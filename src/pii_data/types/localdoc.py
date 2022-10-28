@@ -9,10 +9,10 @@ information
 
 from pathlib import Path
 
-from typing import Dict, Iterable, Union, List
+from typing import Dict, Iterable, Union, List, Iterator
 
-from ..defs import FMT_SRCDOCUMENT
-from ..doc import dump_text, dump_yaml
+from ..defs import FMT_SRCDOCUMENT, DOC_TYPES
+from ..dump import dump_text, dump_yaml
 from ..helper.exception import InvArgException, InvalidDocument
 from ..helper.io import load_datafile, base_extension
 
@@ -23,10 +23,6 @@ from .document import SrcDocument, DocumentChunk, \
 TYPE_CHUNK = Union[Dict, str, List]
 
 
-# Mapping of classes to document type (as added to metadata)
-TYPES = {"SequenceLocalSrcDocument": "sequence",
-         "TreeLocalSrcDocument": "tree",
-         "TableLocalSrcDocument": "table"}
 
 # --------------------------------------------------------------------------
 
@@ -45,8 +41,10 @@ class BaseLocalSrcDocument(SrcDocument):
           :param metadata: document general information
         """
         super().__init__(iter_options=iter_options, metadata=metadata)
+        # Add document chunks
         self.set_chunks(chunks)
-        dtype = TYPES.get(self.__class__.__name__)
+        # Find the docuemnt type and add it to the header
+        dtype = DOC_TYPES.get(self.__class__.__name__)
         if dtype:
             self.add_metadata(document={"type": dtype})
 
@@ -69,13 +67,13 @@ class BaseLocalSrcDocument(SrcDocument):
     def set_chunks(self, chunks: Iterable[Dict]):
         """
         Set the document chunks
-          :param chunks: an iterable producing either plain strings, or
+         :param chunks: an iterable producing either plain strings, or
             dictionaries (which contain at least a `data` field)
         """
-        self._chk = chunks if chunks else None
+        self._chk = chunks if chunks else []
 
 
-    def iter_base(self) -> Iterable[DocumentChunk]:
+    def iter_base(self) -> Iterator[DocumentChunk]:
         """
         Get an iterable over the document chunks
         """
@@ -83,43 +81,120 @@ class BaseLocalSrcDocument(SrcDocument):
         return iter(self._chk)
 
 
-    def dump(self, outname: str, format: str = None, indent: int = 0):
+    def dump(self, outname: str, format: str = None, indent: int = 0,
+             context_fields: List[str] = None):
         """
         Dump the document to an output file
           :param outname: name of the output file
           :param format: format to write the document in. Valid values are
             "yml", "json", "txt". If not present, the format will try to be
             deduced from the file extension
-          :param indent:
+          :param indent: for text output and tree documents, indent used to
+            indicate hierarchy level
+          :param context_fields: for YAML/JSON output, specific set of context
+            fields that will be dumped, if present in the iter_struct() results.
+            If not passed, all existing context fields will be added *except* a
+            set of well-known structure fields.
         """
-        dump_file(self, outname, format=format, indent=indent)
+        dump_file(self, outname, format=format, indent=indent,
+                  context_fields=context_fields)
 
 
 
 # --------------------------------------------------------------------------
 
 
+class SequenceLocalSrcDocument(BaseLocalSrcDocument, SequenceSrcDocument):
+
+    def add_chunk(self, chunk: DocumentChunk):
+        """
+        Add a chunk to the sequence document
+        """
+        self._chk.append(chunk.as_dict())
+
+
 class TreeLocalSrcDocument(BaseLocalSrcDocument, TreeSrcDocument):
-    pass
+
+    def add_chunk(self, chunk: DocumentChunk):
+        """
+        Add a chunk to the tree document
+        """
+        cur_lev = getattr(self, "_cur_lev", 0)
+        new_lev = chunk.context.get("level", 0) if chunk.context else 0
+
+        if new_lev > cur_lev + 1:
+            raise InvArgException("level gap in document tree for chunk: {}",
+                                  chunk.id)
+        chunk = chunk.as_dict()
+        if new_lev == 0:
+            self._chk.append(chunk)
+            self._stack = [chunk]
+            return
+
+        pos = self._stack[new_lev-1]
+        self._cur_lev = new_lev
+        self._stack = self._stack[:new_lev] + [chunk]
+        if "chunks" not in pos:
+            pos["chunks"] = [chunk]
+        else:
+            pos["chunks"].append(chunk)
+
 
 class TableLocalSrcDocument(BaseLocalSrcDocument, TableSrcDocument):
-    pass
 
-class SequenceLocalSrcDocument(BaseLocalSrcDocument, SequenceSrcDocument):
-    pass
+    def add_chunk(self, chunk: DocumentChunk):
+        """
+        Add a chunk to the table document
+        """
+        cur_row = getattr(self, "_cur_row", None)
+        new_row = chunk.context.get("row")
+
+        if new_row == cur_row:
+            row_chunk = self._chk[-1]
+        else:
+            row_chunk = {"id": new_row, "data": []}
+            self._chk.append(row_chunk)
+
+        row_chunk["data"].append(chunk.data)
+        self._cur_row = new_row
+
+
+class LocalSrcDocument:
+    """
+    A dispatcher class that loads a SrcDocument stored in a local YAML file
+    """
+
+    def __new__(self, document_type: str, **kwargs):
+        """
+        Create a local document of a specific type
+        """
+        if document_type == "sequence":
+            return SequenceLocalSrcDocument(**kwargs)
+        elif document_type == "tree":
+            return TreeLocalSrcDocument(**kwargs)
+        elif document_type == "table":
+            return TableLocalSrcDocument(**kwargs)
+        else:
+            InvArgException("unknown document type: {}", document_type)
 
 
 # --------------------------------------------------------------------------
 
 def dump_file(doc: SrcDocument, outname: str,
-              format: str = None, indent: int = 0):
+              format: str = None, indent: int = 0,
+              context_fields: List[str] = None):
     """
     Dump a document to an output file
-      :param outname: name of the ooutput file
+      :param outname: name of the output file
       :param format: format to write the document in. Valid values are
-        "yml", "json", "txt". If not present, the format will try to be
+        "yml", "txt". If not present, the format will try to be
         deduced from the file extension
-      :param indent:
+      :param indent: for text output and tree documents, indent used to
+         indicate hierarchy level
+      :param context_fields: for YAML/JSON output, specific set of context
+         fields that will be dumped, if present in the iter_struct() results.
+         If not passed, all existing context fields will be added *except* a
+         set of well-known structure fields.
     """
     ext = base_extension(outname)
     if format is not None:
@@ -128,14 +203,17 @@ def dump_file(doc: SrcDocument, outname: str,
         format = "yml"
     elif ext == ".txt":
         format = "txt"
+    elif ext == ".json":
+        format = "json"
     else:
         raise InvArgException("unspecified format for: {}", outname)
 
     if format in ("yaml", "yml"):
-        dump_yaml(doc, outname, indent)
+        dump_yaml(doc, outname, context_fields=context_fields)
+    elif format in ("txt", "text"):
+        dump_text(doc, outname, indent=indent)
     else:
-        dump_text(doc, outname, indent)
-
+        raise InvArgException("unsupported output format: {}", format)
 
 
 def load_file(filename: str, iter_options: Dict = None,
@@ -173,16 +251,17 @@ def load_file(filename: str, iter_options: Dict = None,
         Obj = TreeLocalSrcDocument
     elif dtype == "table":
         Obj = TableLocalSrcDocument
-    else:
+    elif dtype == "sequence" or type is None:
         Obj = SequenceLocalSrcDocument
+    else:
+        raise InvalidDocument(f"Unknown document type '{dtype}' in {filename}")
 
     # Create object
     return Obj(chunks=data.get("chunks"), metadata=hdr,
                iter_options=iter_options)
 
 
-
-class LocalSrcDocument:
+class LocalSrcDocumentFile:
     """
     A dispatcher class that loads a SrcDocument stored in a local YAML file
     """

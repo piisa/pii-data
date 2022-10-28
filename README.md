@@ -24,9 +24,10 @@ The package contains the capability to dump a Source Document to a local file,
 following a standardized schema, and to read it back from the file. This schema
 uses YAML as support file format, and is the _only_ document read capability
 natively provided by the package (to read other formats into Source Document
-objects there is an auxiliary [pii-preprocess] package).
+objects there is an auxiliary [pii-preprocess] package, or you can [implement
+yout own]).
 
-The package can also write documents as raw text files.
+The package can also export documents as raw text files.
 
 
 ### PII Collection
@@ -35,17 +36,12 @@ A PII Collection contains a list of detected/extracted PII Entities. Each
 entity contains all the information needed to correctly identify one PII
 instance and locate it in the document it belongs to.
 
-These are the data classes defined:
- * `PiiCollection`: the full collection of PII
- * `PiiEntity`: one PII instance
+These are the PII data classes defined:
+ * [PiiEntity]: one PII instance
+ * [PiiCollection]: the full collection of PII (the additional
+   `PiiCollectionLoader` subclass can load a collection from a JSON file)
  * `PiiDetector`: an object to describe the module used to generate a given
    `PiiEntity` object
-	
-`PiiCollection` objects have a `dump()` method that allows writing them in a
-standard format, with two representations:
- * a JSON representation, adequate for storage
- * a NDJSON representation (newline-delimited JSON), intended for processing
-   and streaming
 
 
 ## Online behaviour
@@ -54,8 +50,10 @@ There is partial support to use these data classes in an [streaming] fashion,
 providing a way to feed data incrementally.
 
 
-
+[implement your own]: doc/implementing-srcdocument.md
 [streaming]: doc/stream.md
 [SrcDocument]: doc/srcdocument.md
+[PiiEntity]: doc/piientity.md
+[PiiCollection]: doc/piicollection.md
 [PIISA Data Specification]: https://github.com/piisa/piisa/
 [pii-preprocess]: https://github.com/piisa/pii-preprocess/

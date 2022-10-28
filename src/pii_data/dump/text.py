@@ -1,5 +1,5 @@
 """
-Dump a document to raw text
+Dump a document to plain text
 """
 
 from typing import Dict, TextIO

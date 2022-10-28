@@ -10,6 +10,7 @@ import tempfile
 from unittest.mock import Mock
 import pytest
 
+from typing import Dict
 
 from pii_data.helper.io import load_yaml
 from pii_data.helper.exception import InvalidDocument
@@ -17,17 +18,29 @@ import pii_data.types.document as doc
 import pii_data.types.localdoc as mod
 
 
-DATADIR = Path(__file__).parents[2] / "data"
+DATADIR = Path(__file__).parents[2] / "data" / "doc-example"
 
 SIMPLEDOC = [
     "an example text",
     "another example text"
 ]
 
+
 def readfile(name: str) -> str:
     with open(name, "rt", encoding="utf-8") as f:
         return f.read().strip()
 
+
+def save_load(doc: mod.BaseLocalSrcDocument) -> Dict:
+    try:
+        f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
+        doc.dump(f, format="yml")
+        f.close()
+        return load_yaml(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    
 @pytest.fixture
 def fix_uuid(monkeypatch):
     """
@@ -95,12 +108,7 @@ def test250_iter_full():
 def test300_dump(fix_uuid):
     """Test object dump, plain"""
     obj = mod.BaseLocalSrcDocument(chunks=SIMPLEDOC)
-    try:
-        f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
-        obj.dump(f.name)
-        got = load_yaml(f.name)
-    finally:
-        Path(f.name).unlink()
+    got = save_load(obj)
 
     exp = {
         'format': 'piisa:src-document:v1',
@@ -118,12 +126,7 @@ def test300_dump(fix_uuid):
 def test310_dump_sequence(fix_uuid):
     """Test object dump, sequence"""
     obj = mod.SequenceLocalSrcDocument(chunks=SIMPLEDOC)
-    try:
-        f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
-        obj.dump(f.name)
-        got = load_yaml(f.name)
-    finally:
-        Path(f.name).unlink()
+    got = save_load(obj)
 
     exp = {
         'format': 'piisa:src-document:v1',
@@ -140,7 +143,7 @@ def test310_dump_sequence(fix_uuid):
 
 def test400_load_dump_sequential():
     """Test object load + dump, sequential"""
-    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml")
+    obj = mod.load_file(DATADIR / "seq-id.yaml")
     try:
         f = tempfile.NamedTemporaryFile(mode="wt", suffix=".yml", delete=False)
         obj.dump(f.name)
@@ -148,14 +151,14 @@ def test400_load_dump_sequential():
     finally:
         Path(f.name).unlink()
 
-    exp = load_yaml(DATADIR / "doc-example-seq-id.yaml")
+    exp = load_yaml(DATADIR / "seq-id.yaml")
     assert exp == got
 
 
 def test410_load_dump_tree(fix_uuid):
     """Test object load/dump, tree document"""
 
-    obj = mod.load_file(DATADIR / "doc-example-tree.yaml")
+    obj = mod.load_file(DATADIR / "tree.yaml")
 
     # Dump to a YAML file, and load it back
     try:
@@ -165,16 +168,16 @@ def test410_load_dump_tree(fix_uuid):
     finally:
         Path(f.name).unlink()
 
-    exp = load_yaml(DATADIR / 'doc-example-tree-id.yaml')
+    exp = load_yaml(DATADIR / 'tree-id.yaml')
     assert exp == got
 
 
 def test420_load_dump_tree_id_path():
     """Test object load/dump, tree document, path_prefix"""
 
-    name = DATADIR / "doc-example-tree.yaml"
+    name = DATADIR / "tree.yaml"
     obj = mod.load_file(name)
-    obj.set_id_path(name, path_prefix=name.parents[1])
+    obj.set_id_path(name, path_prefix=name.parents[2])
 
     # Dump to a YAML file, and load it back
     try:
@@ -184,14 +187,14 @@ def test420_load_dump_tree_id_path():
     finally:
         Path(f.name).unlink()
 
-    exp = load_yaml(DATADIR / 'doc-example-tree-id-path.yaml')
+    exp = load_yaml(DATADIR / 'tree-id-path.yaml')
     assert exp == got
 
 
 def test430_load_dump_tree_class(fix_uuid):
     """Test object load/dump, tree document, class API"""
 
-    obj = mod.LocalSrcDocument(DATADIR / "doc-example-tree.yaml")
+    obj = mod.LocalSrcDocumentFile(DATADIR / "tree.yaml")
     assert isinstance(obj, mod.TreeLocalSrcDocument)
 
     # Dump to a YAML file, and load it back
@@ -202,20 +205,19 @@ def test430_load_dump_tree_class(fix_uuid):
     finally:
         Path(f.name).unlink()
 
-    exp = load_yaml(DATADIR / 'doc-example-tree-id.yaml')
+    exp = load_yaml(DATADIR / 'tree-id.yaml')
     assert exp == got
 
 
 def test430_load_dump_error(fix_uuid):
     """Test loading an invalid file"""
-
     with pytest.raises(InvalidDocument):
-        mod.LocalSrcDocument(DATADIR / "doc-example-err.yaml")
+        mod.LocalSrcDocumentFile(DATADIR / "tree-error.yaml")
 
 
 def test500_iter():
     """Test object iteration"""
-    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml")
+    obj = mod.load_file(DATADIR / "seq-id.yaml")
     got = list(obj)
 
     assert len(got) == 19
@@ -231,8 +233,7 @@ def test500_iter():
 
 def test510_iter_context():
     """Test object iteration, iteration options"""
-    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml",
-                        iter_options={"context": True})
+    obj = mod.load_file(DATADIR / "seq-id.yaml", iter_options={"context": True})
     got = list(obj)
 
     assert len(got) == 19
@@ -263,7 +264,7 @@ def test510_iter_context():
 def test600_metadata():
     """Test read, add metadata"""
     meta = {"document": {"foo": "bar"}}
-    obj = mod.load_file(DATADIR / "doc-example-seq-id.yaml", metadata=meta)
+    obj = mod.load_file(DATADIR / "seq-id.yaml", metadata=meta)
     got = obj.metadata
     exp = MappingProxyType({
         "document": {
@@ -278,8 +279,7 @@ def test600_metadata():
 def test610_metadata_class():
     """Test read, add metadata, class object"""
     meta = {"document": {"foo": "bar"}}
-    obj = mod.LocalSrcDocument(DATADIR / "doc-example-seq-id.yaml",
-                               metadata=meta)
+    obj = mod.LocalSrcDocumentFile(DATADIR / "seq-id.yaml", metadata=meta)
     got = obj.metadata
     exp = MappingProxyType({
         "document": {

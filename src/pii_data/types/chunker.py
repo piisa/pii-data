@@ -2,17 +2,38 @@
 Convert document pieces in DocumentChunk objects, optionally adding context
 """
 
-from collections import namedtuple
 from types import MappingProxyType
 
 from typing import Dict
 
 
-# The contents of a document chunk:
-#  - a chunk id
-#  - the text content
-#  - a context for the chunk (optional)
-DocumentChunk = namedtuple("DocumentChunk", "id data context", defaults=[None])
+class DocumentChunk:
+    """
+    A class to hold the contents of a document chunk:
+     - a chunk id
+     - the chunk data (its contents)
+     - a context for the chunk (optional)
+    """
+
+    __slots__ = ('id', 'data', 'context')
+
+    def __init__(self, id, data, context: dict = None):
+        self.id = str(id)
+        self.data = data
+        self.context = context
+
+    def __repr__(self) -> str:
+        return f"<DocumentChunk {self.id} #{len(self.data)}>"
+
+    def __eq__(self, other) -> bool:
+        return (self.id, self.data, self.context) == \
+            (other.id, other.data, other.context)
+
+    def as_dict(self, context: bool = True) -> Dict:
+        doc = {"id": self.id, "data": self.data}
+        if context and self.context:
+            doc["context"] = self.context
+        return doc
 
 
 
@@ -29,15 +50,15 @@ class ChunkGenerator:
         """
         Create one chunk from a document element
         """
-        # Get chunk components (id, payload)
+        # Get or create chunk id
         chunk_id = elem.get("id")
         if chunk_id is None:
             self._chunk_id += 1
             chunk_id = self._chunk_id
-        payload = elem["data"]
 
         # Create & return the chunk
-        return DocumentChunk(chunk_id, payload, ctx)
+        context = ctx or elem.get("context")
+        return DocumentChunk(chunk_id, elem["data"], context)
 
 
 

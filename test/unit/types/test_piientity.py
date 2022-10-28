@@ -1,4 +1,5 @@
 
+from pii_data.helper.exception import InvArgException
 from pii_data.types.piienum import PiiEnum
 import pii_data.types.piientity as mod
 
@@ -79,3 +80,38 @@ def test50_dict_extra():
 
 
     assert obj.as_dict() == exp
+
+
+def test60_from_dict():
+    """Test object from dict"""
+    pii = {'type': 'CREDIT_CARD',
+           'chunkid': '12',
+           'end': 34,
+           'start': 15,
+           'value': '3412 2121 4121 4212',
+           'lang': 'en'}
+    got = mod.PiiEntity.from_dict(pii)
+
+    exp = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    assert exp == got
+    assert got.as_dict() == pii
+
+
+def test61_from_dict_err():
+    """Test object from dict, invalid dict"""
+    pii = {'end': 34,
+           'start': 15,
+           'value': '3412 2121 4121 4212',
+           'lang': 'en'}
+    with pytest.raises(InvArgException):
+        mod.PiiEntity.from_dict(pii)
+
+def test62_from_dict_err():
+    """Test object from dict, invalid dict"""
+    pii = {'type': 'not a type',
+           'end': 34,
+           'start': 15,
+           'value': '3412 2121 4121 4212',
+           'lang': 'en'}
+    with pytest.raises(InvArgException):
+        mod.PiiEntity.from_dict(pii)

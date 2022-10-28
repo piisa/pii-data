@@ -88,13 +88,20 @@ def test300_iter_full():
     obj = ExampleTreeSrcDoc()
 
     exp = [
-        mod.DocumentChunk(id='1', data='section 1', context=None),
-        mod.DocumentChunk(id='1.1', data='subsection 1.1', context=None),
-        mod.DocumentChunk(id='1.2', data='subsection 1.2', context=None),
-        mod.DocumentChunk(id='2', data='section 2', context=None),
-        mod.DocumentChunk(id='2.1', data='subsection 2.1', context=None),
-        mod.DocumentChunk(id='2.1.1', data='subsection 2.1.1', context=None),
-        mod.DocumentChunk(id='3', data='section 3', context=None)
+        mod.DocumentChunk(id='1', data='section 1',
+                          context={"level": 0}),
+        mod.DocumentChunk(id='1.1', data='subsection 1.1',
+                          context={"level": 1}),
+        mod.DocumentChunk(id='1.2', data='subsection 1.2',
+                          context={"level": 1}),
+        mod.DocumentChunk(id='2', data='section 2',
+                          context={"level": 0}),
+        mod.DocumentChunk(id='2.1', data='subsection 2.1',
+                          context={"level": 1}),
+        mod.DocumentChunk(id='2.1.1', data='subsection 2.1.1',
+                          context={"level": 2}),
+        mod.DocumentChunk(id='3', data='section 3',
+                          context={"level": 0})
     ]
     got = list(obj)
     assert exp == got
@@ -108,30 +115,30 @@ def test310_iter_ctx(fix_uuid):
     ctx_doc = MappingProxyType({'id': '00000-11111'})
     exp = [
         mod.DocumentChunk(id='1', data='section 1',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc, "level": 0,
                                    'after': 'subsection 1.1'}),
         mod.DocumentChunk(id='1.1', data='subsection 1.1',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc, "level": 1,
                                    'before': 'section 1',
                                    'after': 'subsection 1.2'}),
         mod.DocumentChunk(id='1.2', data='subsection 1.2',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc, "level": 1,
                                    'before': 'subsection 1.1',
                                    'after': 'section 2'}),
         mod.DocumentChunk(id='2', data='section 2',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc, "level": 0,
                                    'before': 'subsection 1.2',
                                    'after': 'subsection 2.1'}),
         mod.DocumentChunk(id='2.1', data='subsection 2.1',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc, "level": 1,
                                    'before': 'section 2',
                                    'after': 'subsection 2.1.1'}),
         mod.DocumentChunk(id='2.1.1', data='subsection 2.1.1',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc,  "level": 2,
                                    'before': 'subsection 2.1',
                                    'after': 'section 3'}),
         mod.DocumentChunk(id='3', data='section 3',
-                          context={'document': ctx_doc,
+                          context={'document': ctx_doc, "level": 0,
                                    'before': 'subsection 2.1.1'})]
 
     got = list(obj)
