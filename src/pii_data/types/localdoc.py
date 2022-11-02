@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Iterable, Union, List, Iterator
 
 from ..defs import FMT_SRCDOCUMENT, DOC_TYPES
-from ..dump import dump_text, dump_yaml
+from ..dump import dump_text, dump_yaml, dump_json
 from ..helper.exception import InvArgException, InvalidDocument
 from ..helper.io import load_datafile, base_extension
 
@@ -201,7 +201,7 @@ def dump_file(doc: SrcDocument, outname: str,
         format = str(format).lower()
     elif ext in (".yml", ".yaml"):
         format = "yml"
-    elif ext == ".txt":
+    elif ext in (".txt", ".text"):
         format = "txt"
     elif ext == ".json":
         format = "json"
@@ -210,6 +210,8 @@ def dump_file(doc: SrcDocument, outname: str,
 
     if format in ("yaml", "yml"):
         dump_yaml(doc, outname, context_fields=context_fields)
+    elif format == "json":
+        dump_json(doc, outname, indent=indent, context_fields=context_fields)
     elif format in ("txt", "text"):
         dump_text(doc, outname, indent=indent)
     else:

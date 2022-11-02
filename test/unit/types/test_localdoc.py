@@ -6,6 +6,7 @@ Test the LocalSrcDocument class
 from pathlib import Path
 from types import MappingProxyType
 import tempfile
+import json
 
 from unittest.mock import Mock
 import pytest
@@ -153,6 +154,20 @@ def test400_load_dump_sequential():
 
     exp = load_yaml(DATADIR / "seq-id.yaml")
     assert exp == got
+
+
+def test401_load_dump_sequential_json():
+    """Test object load + dump, sequential, json"""
+    obj = mod.load_file(DATADIR / "seq-id.yaml")
+    try:
+        f = tempfile.NamedTemporaryFile(mode="wt", suffix=".json", delete=False)
+        obj.dump(f.name)
+        got = readfile(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    exp = load_yaml(DATADIR / "seq-id.yaml")
+    assert exp == json.loads(got)
 
 
 def test410_load_dump_tree(fix_uuid):
