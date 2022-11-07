@@ -81,7 +81,7 @@ class BaseLocalSrcDocument(SrcDocument):
         return iter(self._chk)
 
 
-    def dump(self, outname: str, format: str = None, indent: int = 0,
+    def dump(self, outname: str, format: str = None, indent: int = None,
              context_fields: List[str] = None):
         """
         Dump the document to an output file
@@ -181,7 +181,7 @@ class LocalSrcDocument:
 # --------------------------------------------------------------------------
 
 def dump_file(doc: SrcDocument, outname: str,
-              format: str = None, indent: int = 0,
+              format: str = None, indent: int = None,
               context_fields: List[str] = None):
     """
     Dump a document to an output file

@@ -174,17 +174,17 @@ class PiiCollection:
         """
         header = self.header()
 
-        if format == 'ndjson':
+        if format in ("ndjson", "jsonl"):
 
             print(self.encoder.encode(header), file=out)
             for pii in self.pii:
                 print(self.encoder.encode(pii), file=out)
 
-        elif format == 'json':
+        elif format == "json":
 
-            data = {'metadata': header, 'pii_list': self.pii}
-            if 'indent' not in kwargs:
-                kwargs['indent'] = 2
+            data = {"metadata": header, "pii_list": self.pii}
+            if "indent" not in kwargs:
+                kwargs["indent"] = 2
             json.dump(data, out, ensure_ascii=False, cls=CustomJSONEncoder,
                       **kwargs)
 
@@ -198,7 +198,7 @@ def check_format(metadata: Dict, source_name: str):
     """
     Check that the PiiCollection header contains valid tags
     """
-    fmt = metadata.get('format')
+    fmt = metadata.get("format")
     if fmt != FMT_PIICOLLECTION:
         raise InvArgException('invalid format "{}" found in {}',
                               fmt, source_name)
