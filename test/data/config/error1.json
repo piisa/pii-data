@@ -1,0 +1,7 @@
+{
+  "foo": "bar",
+  "foodict": {
+    "bar1": null,
+    "bar2": 43
+  }
+}

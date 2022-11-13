@@ -9,12 +9,11 @@ import gzip
 import bz2
 import lzma
 import json
-import io
-from yaml import load as yaml_load, SafeLoader as YamlLoader
+from yaml import load as yaml_load, SafeLoader as YamlLoader, YAMLError
 
 from typing import Dict, TextIO
 
-from .exception import InvArgException
+from .exception import InvArgException, FileException
 
 
 CHARSET_ENCODING = "utf-8"
@@ -36,7 +35,14 @@ def base_extension(name: str) -> str:
 def openfile(name: str, mode: str = 'rt', encoding: str = None) -> TextIO:
     """
     Open files, as raw text or compressed text (gzip, bzip2 or xz)
+      :param name: fileneme to open
+      :param mode: open mode
+      :param encoding: for text modes, charset encoding
+
+    If an encoding is given, the file will be opened in text mode. If not,
+    and text mode has been specified, a default encoding will be assigned.
     """
+
     # Check if we've been given a file-like object; if so just return it
     if mode.startswith("r") and hasattr(name, 'read') or \
        mode.startswith(("w", "a")) and hasattr(name, "write"):
@@ -48,6 +54,8 @@ def openfile(name: str, mode: str = 'rt', encoding: str = None) -> TextIO:
         encoding = None
     elif encoding is None:
         encoding = CHARSET_ENCODING
+    else:
+        mode = mode[0] + 't'
 
     # Open with the right module
     if sname == "-":
@@ -67,7 +75,11 @@ def load_yaml(filename: str) -> Dict:
     Load a YAML file
     """
     with openfile(filename) as f:
-        return yaml_load(f, Loader=YamlLoader)
+        try:
+            return yaml_load(f, Loader=YamlLoader)
+        except YAMLError as e:
+            raise FileException("read error in YAML file '{}': {}",
+                                filename, e) from e
 
 
 def load_datafile(filename: str) -> Dict:
@@ -76,9 +88,17 @@ def load_datafile(filename: str) -> Dict:
     """
     filepath = Path(filename)
     if '.json' in filepath.suffixes:
+
         with openfile(filename) as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.JSONDecodeError as e:
+                raise FileException("read error in JSON file '{}': {}",
+                                    f, e) from e
+
     elif '.yml' in filepath.suffixes or '.yaml' in filepath.suffixes:
+
         return load_yaml(filename)
+
     else:
         raise InvArgException('cannot load "{}": unsupported format')

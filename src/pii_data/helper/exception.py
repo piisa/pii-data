@@ -34,9 +34,16 @@ class InvalidDocument(ProcException):
     pass
 
 
+class ConfigException(ProcException):
+    """
+    A problem with a configuration
+    """
+    pass
+
+
 class FileException(ProcException):
     """
-    An problem with a file
+    A problem with a file
     """
     pass
 

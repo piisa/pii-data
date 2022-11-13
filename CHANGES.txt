@@ -13,6 +13,7 @@ v. 0.2.0
  * openfile: allow file-like objects as argument
  * fixed newlines in text output
  * added json dump to object
+ * added config file management
  * some bugfixes
 
 v. 0.1.0

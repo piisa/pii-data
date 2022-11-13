@@ -1,6 +1,7 @@
 # Format indicators for I/O
 FMT_SRCDOCUMENT = "piisa:src-document:v1"
 FMT_PIICOLLECTION = "piisa:pii-collection:v1"
+FMT_CONFIG_FULL = "piisa:config:full:v1"
 
 # Mapping of classes to document type (as added to metadata)
 DOC_TYPES = {"SequenceLocalSrcDocument": "sequence",

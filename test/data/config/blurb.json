@@ -1,0 +1,8 @@
+{
+  "format": "piisa:config:blurb:v1",
+  "foo": "bar",
+  "foodict": {
+    "bar1": null,
+    "bar2": 40
+  }
+}

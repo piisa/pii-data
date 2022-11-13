@@ -26,7 +26,7 @@ class PiiEntity:
           :param chunk: the id for the chunk the PII is in
           :param pos: position of the PII in the chunk
         Additional optional arguments are: `subtype`, `lang`, `country`,
-        `docid`, `detector`
+        `docid`, `detector`, 'status'
         """
         # Compulsory arguments
         self.type = ptype
@@ -34,7 +34,7 @@ class PiiEntity:
         self.pos = pos
 
         # Optional arguments
-        for k in ('subtype', 'lang', 'country', 'docid', 'detector'):
+        for k in ('subtype', 'lang', 'country', 'docid', 'detector', 'status'):
             v = kwargs.get(k)
             if v is not None:
                 self.fields[k] = v
