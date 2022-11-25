@@ -48,8 +48,8 @@ class CustomJSONEncoder(json.JSONEncoder):
             return sorted(obj, key=keygetter_set)
         elif hasattr(obj, 'to_json'):
             return obj.to_json()
-        elif hasattr(obj, 'as_dict'):
-            return obj.as_dict()
+        elif hasattr(obj, 'asdict'):
+            return obj.asdict()
         elif isinstance(obj, Iterator):
             return list(obj)
         elif isinstance(obj, (bytes, bytearray)):

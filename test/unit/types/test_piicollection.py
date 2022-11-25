@@ -38,16 +38,16 @@ def fix_timestamp(monkeypatch):
 
 def test100_piidetector():
     """Test object creation"""
-    obj = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
+    obj = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
     assert str(obj) == "<PiiDetector PIISA/PII Finder/0.1.0>"
 
 
 def test110_piidetector():
     """Test object value"""
-    obj = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    assert obj.as_dict() == {"name": "PII Finder",
-                             "version": "0.1.0",
-                             "source": "PIISA"}
+    obj = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    assert obj.asdict() == {"name": "PII Finder",
+                            "version": "0.1.0",
+                            "source": "PIISA"}
 
 
 def test200_piicollection():
@@ -60,8 +60,8 @@ def test210_piicollection_add():
     """Test adding PII entity"""
     obj = mod.PiiCollection(lang="pt", docid="doc1")
 
-    det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    ent = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
+    det = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    ent = PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
 
     obj.add(ent, det)
     assert len(obj) == 1
@@ -71,10 +71,10 @@ def test220_piicollection_dump_json(fix_timestamp):
     """Test JSON dump"""
     obj = mod.PiiCollection(lang="pt", docid="doc1")
 
-    det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    ent1 = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
-    ent2 = PiiEntity(PiiEnum.CREDIT_CARD, "1234567890", chunk="30", pos=60,
-                     country="br")
+    det = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    ent1 = PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
+    ent2 = PiiEntity.build(PiiEnum.CREDIT_CARD, "1234567890", chunk="30",
+                           pos=60, country="br")
     obj.add(ent1, det)
     obj.add(ent2, det)
     assert len(obj) == 2

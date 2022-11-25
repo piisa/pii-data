@@ -2,10 +2,42 @@
 A class to define the contents of a detected PII entity
 """
 
+from dataclasses import dataclass
+
 from ..helper.exception import InvArgException
+from ..helper.misc import filter_dict
 from .piienum import PiiEnum
 
-from typing import Dict, Any
+from typing import Dict, Any, Union
+
+
+# --------------------------------------------------------------------------
+
+@dataclass(order=True)
+class PiiEntityInfo:
+    """
+    Fixed fields in a PII entity instance
+    """
+    pii: PiiEnum
+    lang: str
+    country: str = None
+    subtype: str = None
+
+    def asdict(self) -> Dict:
+        """
+        Return as a dictionary, but without the empty fields
+        """
+        d = {"type": self.pii.name, "lang": self.lang, "country": self.country,
+             "subtype": self.subtype}
+        return filter_dict(d)
+
+
+# --------------------------------------------------------------------------
+
+# Additional variable fields in a PII instance
+EXTRA_FIELDS = "docid", "detector", "status", "score"
+
+TYPE_PTYPE = Union[PiiEnum, str]
 
 
 class PiiEntity:
@@ -16,25 +48,53 @@ class PiiEntity:
       * pos, the character position of the PII inside the passed document
     """
 
-    __slots__ = "type", "fields", "pos"
+    __slots__ = "info", "fields", "pos"
 
-    def __init__(self, ptype: PiiEnum, value: str,
-                 chunk: str, pos: int, **kwargs):
+
+    @classmethod
+    def build(cls, ptype: TYPE_PTYPE, value: str, chunk: str, pos: int,
+              lang: str = None, country: str = None, subtype: str = None,
+              **kwargs):
         """
+        Build an object with an full list of arguments
           :param ptype: PII type
           :param value: the extracted PII string
           :param chunk: the id for the chunk the PII is in
           :param pos: position of the PII in the chunk
-        Additional optional arguments are: `subtype`, `lang`, `country`,
-        `docid`, `detector`, 'status'
+          :param lang: language associated with the PII
+          :param country: country associated with the PII
+          :param subtype: PII subtype
+        Additional optional arguments are as given by EXTRA_FIELDS
+        """
+        # Define type
+        if not isinstance(ptype, PiiEnum):
+            try:
+                ptype = PiiEnum[ptype]
+            except KeyError as e:
+                raise InvArgException("unknown PiiEnum value: {}", e)
+        # Build object
+        info = PiiEntityInfo(ptype, lang, country, subtype)
+        return cls(info, value=value, chunk=chunk, pos=pos, **kwargs)
+
+
+    def __init__(self, info: PiiEntityInfo, value: str, chunk: str, pos: int,
+                 **kwargs):
+        """
+        Build an object
+          :param info: a PiiEntityInfo object describing the entity fixed values
+          :param value: the extracted PII string
+          :param chunk: the id for the chunk the PII is in
+          :param pos: position of the PII in the chunk
+        Additional optional arguments are as given by EXTRA_FIELDS
         """
         # Compulsory arguments
-        self.type = ptype
-        self.fields = {'type': ptype.name, 'value': value, 'chunkid': chunk}
+        if not isinstance(info, PiiEntityInfo):
+            raise InvArgException("invalid info object in entity constructor: {}", type(info))
+        self.info = info
+        self.fields = {'type': info.pii.name, 'value': value, 'chunkid': chunk}
         self.pos = pos
-
-        # Optional arguments
-        for k in ('subtype', 'lang', 'country', 'docid', 'detector', 'status'):
+        # Other arguments
+        for k in EXTRA_FIELDS:
             v = kwargs.get(k)
             if v is not None:
                 self.fields[k] = v
@@ -67,33 +127,29 @@ class PiiEntity:
         self.fields[name] = value
 
 
-    def as_dict(self) -> Dict:
+    def asdict(self) -> Dict:
         """
         Return the object data as a dict that can then be serialised as JSON
         """
-        self.fields['start'] = self.pos
-        self.fields['end'] = self.pos + len(self)
-        return self.fields
+        return {**self.info.asdict(), **self.fields, "start": self.pos,
+                "end": self.pos + len(self)}
 
 
     @classmethod
-    def from_dict(cls, src: Dict) -> "PiiEntity":
+    def fromdict(cls, src: Dict) -> "PiiEntity":
         """
         Create an object from a dictionary
         """
-        src = src.copy()
         # Main elements
         try:
-            ptype = src.pop("type")
-            pos = src.pop("start")
-            value = src.pop("value")
-            chunkid = src.pop("chunkid")
+            ptype = src["type"]
+            pos = src["start"]
+            value = src["value"]
+            chunkid = src["chunkid"]
         except KeyError as e:
             raise InvArgException("missing field in PiiEntity dict: {}", e)
-        # Define type
-        try:
-            pii_type = PiiEnum[ptype]
-        except KeyError as e:
-            raise InvArgException("unknown PiiEnum value: {}", e)
+
         # Create
-        return PiiEntity(pii_type, value, chunkid, pos, **src)
+        fields = "lang", "country", "subtype", *EXTRA_FIELDS
+        extra = dict(t for t in map(lambda k: (k, src.get(k)), fields) if t[1])
+        return cls.build(ptype, value, chunkid, pos, **filter_dict(extra))

@@ -22,7 +22,7 @@ class PiiDetector:
     __slots__ = "_id", "fields"
 
 
-    def __init__(self, name: str, version: str, source: str,
+    def __init__(self, source: str, name: str, version: str,
                  url: str = None, method: str = None):
         """
           :param name: name of the detector
@@ -31,19 +31,19 @@ class PiiDetector:
           :param url: an optional URL for the detector code
           :param method: an optional string defining the detector method
         """
-        self._id = f'{source}/{name}/{version}'
+        self._id = f"{source}/{name}/{version}"
         # Compulsory fields
-        self.fields = {'name': name, 'version': version, 'source': source}
+        self.fields = {"source": source, "name": name, "version": version}
         # Optional fields
         if url:
-            self.fields['url'] = url
+            self.fields["url"] = url
         if method:
-            self.fields['method'] = method
+            self.fields["method"] = method
 
     def __repr__(self) -> str:
         return f"<PiiDetector {self._id}>"
 
-    def as_dict(self) -> Dict:
+    def asdict(self) -> Dict:
         """
         Return the object data as a plain dictionary
         """
@@ -95,7 +95,7 @@ class PiiCollection:
         """
         Return the collection header
         """
-        self._header["detectors"] = {k: v.as_dict()
+        self._header["detectors"] = {k: v.asdict()
                                      for k, v in self.detectors.items()}
         return self._header
 
@@ -126,7 +126,7 @@ class PiiCollection:
 
     def add_detector(self, detector: PiiDetector) -> str:
         """
-        Add a new detector to the header. returns the detector index
+        Add a new detector to the header. Returns the detector index
         """
         if detector._id not in self.detector_map:
             num = len(self.detectors) + 1
@@ -185,7 +185,7 @@ class PiiCollection:
             data = {"metadata": header, "pii_list": self.pii}
             if "indent" not in kwargs:
                 kwargs["indent"] = 2
-            json.dump(data, out, ensure_ascii=False, cls=CustomJSONEncoder,
+            json.dump(data, out, cls=CustomJSONEncoder, ensure_ascii=False,
                       **kwargs)
 
         else:
@@ -231,7 +231,7 @@ class PiiCollectionLoader(PiiCollection):
         check_format(meta, filename)
         self._set_header(meta)
         self._load_detectors(meta['detectors'])
-        self.pii = [PiiEntity.from_dict(d) for d in data['pii_list']]
+        self.pii = [PiiEntity.fromdict(d) for d in data['pii_list']]
 
 
     def load_ndjson(self, src: TextIO):
@@ -245,7 +245,7 @@ class PiiCollectionLoader(PiiCollection):
         self._load_detectors(header['detectors'])
 
         # Read all PII instances
-        self.pii = [PiiEntity.from_dict(json.loads(line)) for line in src]
+        self.pii = [PiiEntity.fromdict(json.loads(line)) for line in src]
 
 
     def load(self, filename: str):

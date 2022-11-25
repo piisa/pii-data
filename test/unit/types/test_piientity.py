@@ -1,6 +1,6 @@
 
 from pii_data.helper.exception import InvArgException
-from pii_data.types.piienum import PiiEnum
+from pii_data.types import PiiEnum, PiiEntityInfo
 import pii_data.types.piientity as mod
 
 import pytest
@@ -8,67 +8,88 @@ import pytest
 
 def test10_object():
     """Test object creation"""
-    obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    info = mod.PiiEntityInfo(PiiEnum.CREDIT_CARD, "any")
+    obj = mod.PiiEntity(info, "3412 2121 4121 4212", "12", 15)
     assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
 
-def test11_object_error():
+def test11_object():
+    """Test object creation, build"""
+    obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
+
+
+def test20_object_error():
     """Test object creation, errors"""
+    # Missing "pos"
     with pytest.raises(TypeError):
-        mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12")
+        mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12")
 
-    with pytest.raises(TypeError):
-        mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15,
-                      44)
+    # Invalid PII type
+    with pytest.raises(InvArgException):
+        mod.PiiEntity.build("NOT_A_VALID_PII", "3412 2121 4121 4212", "12", 15)
 
-def test12_object_kwargs():
+
+def test21_object_kwargs():
     """Test object creation, kwargs"""
-    obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 10,
-                        lang="ch")
+    obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12",
+                              10, lang="ch")
     assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
 
 
-def test20_values():
+def test22_object_str():
+    """Test object creation, type as string"""
+    obj = mod.PiiEntity.build("CREDIT_CARD", "3412 2121 4121 4212", "12", 10,
+                              lang="ch")
+    assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
+
+
+def test30_values():
     """Test object values"""
-    obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212",
+                              "12", 15)
+    assert obj.info == PiiEntityInfo(PiiEnum.CREDIT_CARD, None)
+    assert obj.fields == {"value": "3412 2121 4121 4212", "chunkid": "12",
+                          "type": "CREDIT_CARD"}
+    assert obj.pos == 15
     assert len(obj) == 19
 
 
-def test30_eq():
+def test40_eq():
     """Test object equality"""
-    obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
 
-    obj2 = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    obj2 = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
     assert obj == obj2
 
-    obj2 = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 14)
+    obj2 = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 14)
     assert obj != obj2
 
-    obj2 = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "10", 15)
+    obj2 = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "10", 15)
     assert obj != obj2
 
-    obj2 = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 421x", "12", 15)
+    obj2 = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 421x", "12", 15)
     assert obj != obj2
 
-    obj2 = mod.PiiEntity(PiiEnum.GOV_ID, "3412 2121 4121 4212", "12", 15)
+    obj2 = mod.PiiEntity.build(PiiEnum.GOV_ID, "3412 2121 4121 4212", "12", 15)
     assert obj != obj2
 
 
-def test40_dict():
+def test50_dict():
     """Test object as dict"""
-    obj = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
     exp = {'type': 'CREDIT_CARD',
            'chunkid': '12',
            'end': 34,
            'start': 15,
            'value': '3412 2121 4121 4212'}
 
-    assert obj.as_dict() == exp
+    assert obj.asdict() == exp
 
 
-def test50_dict_extra():
+def test51_dict_extra():
     """Test object as dict, extra fields"""
-    obj = mod.PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15,
-                        subtype="SSN", country="us", lang="en")
+    obj = mod.PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15,
+                              subtype="SSN", country="us", lang="en")
     exp = {'type': 'GOV_ID',
            'chunkid': '12',
            'end': 23,
@@ -79,7 +100,7 @@ def test50_dict_extra():
            'subtype': 'SSN'}
 
 
-    assert obj.as_dict() == exp
+    assert obj.asdict() == exp
 
 
 def test60_from_dict():
@@ -90,11 +111,11 @@ def test60_from_dict():
            'start': 15,
            'value': '3412 2121 4121 4212',
            'lang': 'en'}
-    got = mod.PiiEntity.from_dict(pii)
+    got = mod.PiiEntity.fromdict(pii)
 
-    exp = mod.PiiEntity(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
+    exp = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
     assert exp == got
-    assert got.as_dict() == pii
+    assert got.asdict() == pii
 
 
 def test61_from_dict_err():
@@ -104,7 +125,7 @@ def test61_from_dict_err():
            'value': '3412 2121 4121 4212',
            'lang': 'en'}
     with pytest.raises(InvArgException):
-        mod.PiiEntity.from_dict(pii)
+        mod.PiiEntity.fromdict(pii)
 
 def test62_from_dict_err():
     """Test object from dict, invalid dict"""
@@ -114,4 +135,4 @@ def test62_from_dict_err():
            'value': '3412 2121 4121 4212',
            'lang': 'en'}
     with pytest.raises(InvArgException):
-        mod.PiiEntity.from_dict(pii)
+        mod.PiiEntity.fromdict(pii)

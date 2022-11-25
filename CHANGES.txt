@@ -14,6 +14,7 @@ v. 0.2.0
  * fixed newlines in text output
  * added json dump to object
  * added config file management
+ * refactored PiiEntity; new PiiEntityInfo subclass
  * some bugfixes
 
 v. 0.1.0
