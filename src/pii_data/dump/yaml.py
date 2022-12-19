@@ -2,7 +2,7 @@
 Dump documents to YAML
 """
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from types import MappingProxyType
 
 from yaml import dump
@@ -12,9 +12,10 @@ from yaml.representer import SafeRepresenter
 
 from typing import Iterable, List, Dict
 
-from ..defs import FMT_SRCDOCUMENT, CTX_FIELDS
-from ..types import SrcDocument
+from ..defs import FMT_SRCDOCUMENT
 from ..helper.io import openfile
+from ..types.doc.defs import CTX_FIELDS
+from ..types.doc import SrcDocument
 from .utils import TextNode, ChunkIterWrapper
 
 

@@ -6,13 +6,13 @@ from types import MappingProxyType
 
 import json
 
-from typing import List, Dict, Set
+from typing import List, Set
 
 from .utils import ChunkIterWrapper
-from ..defs import FMT_SRCDOCUMENT, CTX_FIELDS
-from ..types import SrcDocument
+from ..defs import FMT_SRCDOCUMENT
+from ..types.doc import SrcDocument
+from ..types.doc.defs import CTX_FIELDS
 from ..helper.io import openfile
-
 
 
 def serialize_chunk(chunk, ctx_fields: Set[str], ctx_pos: bool):

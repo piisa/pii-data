@@ -5,7 +5,7 @@ Test writing a SrcDocument as a raw text file
 from pathlib import Path
 import tempfile
 
-from pii_data.types.localdoc import LocalSrcDocumentFile
+from pii_data.types.doc import LocalSrcDocumentFile
 import pii_data.dump.text as mod
 
 

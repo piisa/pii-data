@@ -11,11 +11,11 @@ import pytest
 from typing import Dict
 
 from pii_data.helper.io import load_yaml
-from pii_data.types import DocumentChunk
-import pii_data.types.localdoc as mod
+from pii_data.types.doc import DocumentChunk
+import pii_data.types.doc.localdoc as mod
 
 
-DATADIR = Path(__file__).parents[2] / "data"
+DATADIR = Path(__file__).parents[3] / "data"
 
 SIMPLEDOC = [
     "an example text",

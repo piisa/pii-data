@@ -1,5 +1,5 @@
 """
-A simple exception hiearchy
+A simple exception hierarchy
 """
 
 

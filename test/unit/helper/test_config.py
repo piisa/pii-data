@@ -37,7 +37,7 @@ def test200_load_mod():
     fname = DATADIR / "blurb.json"
     got = mod.load_config(fname)
     exp = {
-        "blurb": {
+        "blurb:v1": {
             'format': 'piisa:config:blurb:v1',
             'foo': 'bar',
             'foodict': {
@@ -57,11 +57,11 @@ def test200_load_full():
         got = mod.load_config(fname)
         exp = {
             "format": "piisa:config:full:v1",
-            "blurb": {
+            "blurb:v1": {
                 "format": "piisa:config:blurb:v1",
                 "blob": "abcd"
             },
-            "blurb2": {
+            "blurb2:v1": {
                 "format": "piisa:config:blurb2:v1",
                 "foo": "bar",
                 "foodict": {
@@ -80,7 +80,7 @@ def test300_load_multi():
     got = mod.load_config(config)
     exp = {
         "format": "piisa:config:full:v1",
-        "blurb": {
+        "blurb:v1": {
             "format": "piisa:config:blurb:v1",
             "blob": "abcd",
             "foo": "bar",
@@ -89,7 +89,7 @@ def test300_load_multi():
                 "bar2": 40
             }
         },
-        "blurb2": {
+        "blurb2:v1": {
             "format": "piisa:config:blurb2:v1",
             "foo": "bar",
             "foodict": {

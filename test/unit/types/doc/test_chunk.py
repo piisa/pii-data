@@ -2,7 +2,7 @@
 Test the DocumentChunk and associated classes
 """
 
-import pii_data.types.chunker as mod
+import pii_data.types.doc.chunker as mod
 
 
 # ----------------------------------------------------------------

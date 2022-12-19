@@ -6,7 +6,7 @@ from types import MappingProxyType
 from unittest.mock import Mock
 import pytest
 
-import pii_data.types.document as mod
+import pii_data.types.doc.document as mod
 
 
 TREEDOC = [

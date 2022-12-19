@@ -11,12 +11,11 @@ import uuid
 
 from typing import Dict, Iterable, Callable, Iterator
 
-from ..helper.exception import UnimplementedException
+from ...helper.exception import UnimplementedException
+from .defs import META_DOC
 from .chunker import DocumentChunk, ChunkGenerator, ContextChunkGenerator
 
 TYPE_META = Dict[str, Dict]
-
-
 
 class SrcDocument:
     """
@@ -39,7 +38,7 @@ class SrcDocument:
 
 
     def __repr__(self) -> str:
-        return f"<SrcDocument {self._meta['document']['id']}>"
+        return f"<SrcDocument {self._meta[META_DOC]['id']}>"
 
 
     @property
@@ -55,7 +54,7 @@ class SrcDocument:
         """
         Return the document id
         """
-        return self._meta["document"].get("id")
+        return self._meta[META_DOC].get("id")
 
 
     def set_id(self, id: str = None):
@@ -63,16 +62,21 @@ class SrcDocument:
         Set the document identifier inside the document metadata
         If an id is nor passed, a random UUID will be used.
         """
-        self._meta["document"]["id"] = id or str(uuid.uuid4())
+        self._meta[META_DOC]["id"] = id or str(uuid.uuid4())
 
 
     def add_metadata(self, **metadata):
         """
         Update the document metadata elements, adding all passed arguments
         (which should be dictionaries)
+        A special field "default_lang" will assign the main document language,
+        only if it is not defined in the metadata yet
         """
+        default_lang = metadata.pop("default_lang", None)
         for k, v in metadata.items():
             self._meta[k].update(v)
+        if default_lang and "main_lang" not in self._meta[META_DOC]:
+            self._meta[META_DOC]["main_lang"] = default_lang
 
 
     def __iter__(self) -> Iterable[Dict]:
@@ -87,8 +91,8 @@ class SrcDocument:
         """
         Iterate over the document, producing a sequence of individual
         DocumentChunk objects
-         :param context: add additional context information to each chunk (this
-           modifies the default option in the object constructor)
+         :param context: add additional context information to each chunk (if
+           not None, this modifies the option passed in the object constructor)
          :param chunk_iterator: the function providing base chunks. If not
            passed, the iter_flat() method will be used.
         """
@@ -154,7 +158,6 @@ class SequenceSrcDocument(SrcDocument):
         return super().iter_full(context=context)
 
 
-
 class TreeSrcDocument(SrcDocument):
     """
     A tree document, as an abstract class.
@@ -165,6 +168,12 @@ class TreeSrcDocument(SrcDocument):
         """
         Return all the chunks stemming from an element in the document
         tree, as a linear sequence
+          :param chunk: the starting chunk
+          :param num: the chunk number, at this level
+          :param level: the chunk level
+          :param prefix: prefix for the chunk id
+          :param context: default context, to use if the chunk hasn't got one
+          :param src: add the raw chunk as an additional source field
         """
         # Get base fields
         data = chunk.get("data")
@@ -201,7 +210,6 @@ class TreeSrcDocument(SrcDocument):
         """
         return super().iter_full(context=context,
                                  chunk_iterator=self._recurse_tree)
-
 
 
 class TableSrcDocument(SrcDocument):

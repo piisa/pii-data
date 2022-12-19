@@ -10,10 +10,10 @@ from itertools import cycle
 from unittest.mock import Mock
 import pytest
 
-import pii_data.types.document as mod
+import pii_data.types.doc.document as mod
 
 
-DATADIR = Path(__file__).parents[2] / "data"
+DATADIR = Path(__file__).parents[3] / "data"
 
 COLNAMES = ["Date", "Name", "Credit Card", "Currency", "Amount", "Description"]
 

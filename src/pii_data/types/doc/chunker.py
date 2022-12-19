@@ -6,6 +6,8 @@ from types import MappingProxyType
 
 from typing import Dict
 
+from .defs import META_DOC
+
 
 class DocumentChunk:
     """
@@ -17,7 +19,7 @@ class DocumentChunk:
 
     __slots__ = ('id', 'data', 'context')
 
-    def __init__(self, id, data, context: dict = None):
+    def __init__(self, id, data, context: Dict = None):
         self.id = str(id)
         self.data = data
         self.context = context
@@ -30,10 +32,10 @@ class DocumentChunk:
             (other.id, other.data, other.context)
 
     def as_dict(self, context: bool = True) -> Dict:
-        doc = {"id": self.id, "data": self.data}
+        chunk = {"id": self.id, "data": self.data}
         if context and self.context:
-            doc["context"] = self.context
-        return doc
+            chunk["context"] = self.context
+        return chunk
 
 
 
@@ -42,7 +44,8 @@ class ChunkGenerator:
     Create DocumentChunk objects from document pieces
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, default_lang: str = None, **kwargs):
+        self._lang = default_lang
         self._chunk_id = 0
 
 
@@ -56,8 +59,15 @@ class ChunkGenerator:
             self._chunk_id += 1
             chunk_id = self._chunk_id
 
-        # Create & return the chunk
+        # Define the chunk context
         context = ctx or elem.get("context")
+        if self._lang:
+            if not context:
+                context = {"lang": self._lang}
+            elif "lang" not in context:
+                context["lang"] = self._lang
+
+        # Create & return the chunk
         return DocumentChunk(chunk_id, elem["data"], context)
 
 
@@ -69,10 +79,11 @@ class ContextChunkGenerator(ChunkGenerator):
     """
 
     def __init__(self, meta: Dict = None):
-        super().__init__()
+        self._ctx = {k: MappingProxyType(v) for k, v in meta.items()}
+        default_lang = self._ctx.get(META_DOC, {}).get("main_lang")
+        super().__init__(default_lang)
         if meta is None:
             meta = {}
-        self._ctx = {k: MappingProxyType(v) for k, v in meta.items()}
         self.before = None
         self.current = None
 
@@ -99,7 +110,7 @@ class ContextChunkGenerator(ChunkGenerator):
             context.update(elem["context"])
         chunk = super().__call__(elem, context)
 
-        # If 1st chunk, just store it & return nothing
+        # If 1s5t chunk, just store it & return nothing
         if self.before is None:
             self.before = chunk
             return

@@ -4,6 +4,7 @@ information
   * read a YAML representation of the document from a local file, through the
     load_file() wrapper function
   * set the data source (as an iterator)
+  * add chunks to a document
   * dump the document to a local file (YAML, JSON, text)
 """
 
@@ -11,17 +12,15 @@ from pathlib import Path
 
 from typing import Dict, Iterable, Union, List, Iterator
 
-from ..defs import FMT_SRCDOCUMENT, DOC_TYPES
-from ..dump import dump_text, dump_yaml, dump_json
-from ..helper.exception import InvArgException, InvalidDocument
-from ..helper.io import load_datafile, base_extension
-
+from ...defs import FMT_SRCDOCUMENT, DOC_TYPES
+from ...dump import dump_text, dump_yaml, dump_json
+from ...helper.exception import InvArgException, InvalidDocument
+from ...helper.io import load_datafile, base_extension
 from .document import SrcDocument, DocumentChunk, \
     TreeSrcDocument, SequenceSrcDocument, TableSrcDocument, TYPE_META
 
 
 TYPE_CHUNK = Union[Dict, str, List]
-
 
 
 # --------------------------------------------------------------------------
@@ -73,7 +72,7 @@ class BaseLocalSrcDocument(SrcDocument):
         self._chk = chunks if chunks else []
 
 
-    def iter_base(self) -> Iterator[DocumentChunk]:
+    def iter_base(self) -> Iterator[Dict]:
         """
         Get an iterable over the document chunks
         """
@@ -98,7 +97,6 @@ class BaseLocalSrcDocument(SrcDocument):
         """
         dump_file(self, outname, format=format, indent=indent,
                   context_fields=context_fields)
-
 
 
 # --------------------------------------------------------------------------

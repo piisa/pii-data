@@ -6,7 +6,7 @@ Test the SrcDocument class
 from unittest.mock import Mock
 import pytest
 
-import pii_data.types.document as mod
+import pii_data.types.doc.document as mod
 
 
 SIMPLEDOC = [
@@ -120,7 +120,7 @@ def test211_iter_ctx(fix_uuid):
 
 
 def test220_iter_ctx_doc(fix_uuid):
-    """Test iteration, with document & chunk context"""
+    """Test iteration, with document & chunk context, inc. lang"""
 
     hdr = {"document": {"main_lang": "en", "id": "doc33"}}
     obj = ExampleSrcDoc(metadata=hdr, iter_options={"context": True})
@@ -129,13 +129,16 @@ def test220_iter_ctx_doc(fix_uuid):
     exp = [
         mod.DocumentChunk(id="1", data="an example text",
                           context={"document": {"main_lang": "en", "id": "doc33"},
+                                   "lang": "en",
                                    "after": "another example text"}),
         mod.DocumentChunk(id="2", data="another example text",
                           context={"document": {"main_lang": "en", "id": "doc33"},
+                                   "lang": "en",
                                    "before": "an example text",
                                    "after": "a third chunk"}),
         mod.DocumentChunk(id="3", data="a third chunk",
                           context={"document": {"main_lang": "en", "id": "doc33"},
+                                   "lang": "en",
                                    "before": "another example text"})]
     assert exp == got
 
@@ -146,21 +149,24 @@ def test230_iter_metadata():
 
     meta = {"document": {"id": "doc44"}}
     obj = ExampleSrcDoc(metadata=meta, iter_options={"context": True})
-    obj.add_metadata(document={"main_lang": "en"}, dataset={"name": "BigDataset"})
+    obj.add_metadata(document={"main_lang": "ch"}, dataset={"name": "BigDataset"})
     got = list(obj)
 
     exp = [
         mod.DocumentChunk(id="1", data="an example text",
-                          context={"document": {"main_lang": "en", "id": "doc44"},
+                          context={"document": {"main_lang": "ch", "id": "doc44"},
                                    "dataset": {"name": "BigDataset"},
+                                   "lang": "ch",
                                    "after": "another example text"}),
         mod.DocumentChunk(id="2", data="another example text",
-                          context={"document": {"main_lang": "en", "id": "doc44"},
+                          context={"document": {"main_lang": "ch", "id": "doc44"},
                                    "dataset": {"name": "BigDataset"},
+                                   "lang": "ch",
                                    "before": "an example text",
                                    "after": "a third chunk"}),
         mod.DocumentChunk(id="3", data="a third chunk",
-                          context={"document": {"main_lang": "en", "id": "doc44"},
+                          context={"document": {"main_lang": "ch", "id": "doc44"},
                                    "dataset": {"name": "BigDataset"},
+                                   "lang": "ch",
                                    "before": "another example text"})]
     assert exp == got

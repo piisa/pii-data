@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 from yaml import safe_load as yaml_load
 
-from pii_data.types.localdoc import LocalSrcDocumentFile
+from pii_data.types.doc import LocalSrcDocumentFile
 import pii_data.dump.yaml as mod
 
 

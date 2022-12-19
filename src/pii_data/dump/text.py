@@ -4,8 +4,8 @@ Dump a document to plain text
 
 from typing import Dict, TextIO
 
-from ..types import SrcDocument
 from ..helper.io import openfile
+from ..types.doc import SrcDocument
 
 
 def _dump_chunk(chunk: Dict, out: TextIO, level: int, indent: int):

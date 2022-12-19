@@ -33,6 +33,6 @@ fields depends on the document type and characteristics. We can distinguish:
 	 - tree documents have a `level` context field, and they may also have
 	   `section` field
  * *iteration* context fields provide information on _neighbouring_ chunks;
-   they are the `before` and `after` fields generated in full iteration,
+   they are the `before` and `after` fields, generated in full iteration
    when the document iteration options contain the `context` field set to 
    `True`

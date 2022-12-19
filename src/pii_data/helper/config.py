@@ -12,7 +12,7 @@ from pathlib import Path
 
 from typing import List, Dict, Union
 
-from ..defs import FMT_CONFIG_FULL
+from ..defs import FMT_CONFIG_PREFIX, FMT_CONFIG_FULL
 from .exception import ConfigException, ProcException
 from .io import load_datafile
 
@@ -23,10 +23,13 @@ TYPE_CONFIG = Union[str, List[str]]
 def read_config_file(filename: str, formats: List[str] = None) -> Dict:
     """
     Read a configuration file (JSON or YAML)
+      :param filename: name of file to read
+      :param formats: list of acceptable configuration formats (in addition
+         to the "full" config format, which is always accepted)
     """
     data = load_datafile(filename)
 
-    # Check format and return full configs
+    # Check format; return full configs unmodified
     if "format" not in data:
         raise ConfigException("format spec not in config '{}'", filename)
     fmt = data["format"]
@@ -34,7 +37,7 @@ def read_config_file(filename: str, formats: List[str] = None) -> Dict:
         return data
 
     # Check format string
-    if not fmt.startswith("piisa:config:"):
+    if not fmt.startswith(FMT_CONFIG_PREFIX):
         raise ConfigException("invalid format spec '{}' in config '{}'",
                               fmt, filename)
     elif formats and fmt not in formats:
@@ -42,7 +45,7 @@ def read_config_file(filename: str, formats: List[str] = None) -> Dict:
                               fmt, filename)
 
     # Return module config
-    tag = '_'.join(fmt.split(':')[2:-1])
+    tag = fmt[len(FMT_CONFIG_PREFIX):]
     return {tag: data}
 
 
@@ -52,6 +55,7 @@ def load_config(filename: TYPE_CONFIG, formats: List[str] = None) -> Dict:
       :param filename: config filename(s) to load
       :param formats: restrict the accepted formats to those (in addition to
          the "full" format, which is always accepted)
+      :return: a dictionary with the config data, indexed by config format
     """
     if isinstance(filename, (str, Path)):
         filename = [filename]

@@ -15,11 +15,11 @@ from typing import Dict
 
 from pii_data.helper.io import load_yaml
 from pii_data.helper.exception import InvalidDocument
-import pii_data.types.document as doc
-import pii_data.types.localdoc as mod
+import pii_data.types.doc.document as doc
+import pii_data.types.doc.localdoc as mod
 
 
-DATADIR = Path(__file__).parents[2] / "data" / "doc-example"
+DATADIR = Path(__file__).parents[3] / "data" / "doc-example"
 
 SIMPLEDOC = [
     "an example text",
@@ -301,6 +301,22 @@ def test610_metadata_class():
             "foo": "bar",
             "id": "00000-11111",
             "type": "sequence"
+        }
+    })
+    assert exp == got
+
+
+def test620_metadata_lang():
+    """Test read, add metadata default language"""
+    meta = {"document": {"foo": "bar"}, "default_lang": "en"}
+    obj = mod.load_file(DATADIR / "seq-id.yaml", metadata=meta)
+    got = obj.metadata
+    exp = MappingProxyType({
+        "document": {
+            "foo": "bar",
+            "id": "00000-11111",
+            "type": "sequence",
+            "main_lang": "en"
         }
     })
     assert exp == got
