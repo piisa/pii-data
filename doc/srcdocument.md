@@ -83,5 +83,5 @@ of YAML anyway).
 
 [data specification]: https://github.com/piisa/piisa/
 [block literal style]: https://yaml.org/spec/1.2.2/#812-literal-style
-[implement]: implementation.md
+[implement]: implementing-srcdocument.md
 [DocumentChunk]: chunks.md

@@ -76,7 +76,8 @@ The additional functionality provided by these _extra_ base classes is:
 	- in the constructor, or
 	- in an additional `set_chunks()` method, or
 	- incrementally, via `add_chunks()`
-* a simple `iter_base()` method
+* a simple `iter_base()` method that iterates over the chunks created in
+  the document
 * a `dump()` method to write the document to a local YAML file
 
 

@@ -1,9 +1,9 @@
 v. 0.2.0
  * DocumentChunk class refactored into a full class, with equality method and
-   as_dict()
+   asdict()
  * Refactored dump code; dump to JSON
- * when dumping to JSON & YAML dump non-structural context fields (and skip
-   structural context)
+ * when dumping documents to JSON & YAML dump non-structural context fields
+   (and skip structural context)
  * modified tree & sequence iteration: changed automatic id assignment
  * new class method from_dict() in PiiInstance
  * when reading a PiiCollection from file, recreate PiiInstance objects
@@ -14,7 +14,11 @@ v. 0.2.0
  * fixed newlines in text output
  * added json dump to object
  * added config file management
+ * new PiiEnum values
  * refactored PiiEntity; new PiiEntityInfo subclass
+ * special SrcDocument metadata field "default_lang"
+ * added "lang" context field to DocumentChunk, automatically copied from
+   document "default_lang" if not present
  * some bugfixes
 
 v. 0.1.0

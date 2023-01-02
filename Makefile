@@ -67,7 +67,7 @@ unit-verbose: venv pytest
 $(PKGFILE): $(VERSION_FILE) setup.py
 	$(PYTHON) setup.py sdist
 
-install: $(PKGFILE)
+install: $(PKGFILE) venv
 	$(VENV)/bin/pip install $(PKGFILE)
 
 uninstall:
@@ -89,14 +89,16 @@ $(VENV)/bin/pytest:
 
 # -----------------------------------------------------------------------
 
-$(VENV)/bin/twine:
+TWINE := $(VENV)/bin/twine
+
+$(TWINE):
 	$(VENV)/bin/pip install twine
 
-upload-check: $(PKGFILE) $(VENV)/bin/twine
-	$(VENV)/bin/twine check $(PKGFILE)
+upload-check: $(PKGFILE) $(TWINE)
+	$(TWINE) check $(PKGFILE)
 
-upload-test: $(PKGFILE)
-	$(VENV)/bin/twine upload --repository pypitest $(PKGFILE)
+upload-test: $(PKGFILE) $(TWINE)
+	$(TWINE) upload --repository pypitest $(PKGFILE)
 
-upload: $(PKGFILE)
-	$(VENV)/bin/twine upload $(PKGFILE)
+upload: $(PKGFILE) $(TWINE)
+	$(TWINE) upload $(PKGFILE)

@@ -35,7 +35,7 @@ class PiiEntityInfo:
 # --------------------------------------------------------------------------
 
 # Additional variable fields in a PII instance
-EXTRA_FIELDS = "docid", "detector", "status", "score"
+EXTRA_FIELDS = "docid", "detector", "process"
 
 TYPE_PTYPE = Union[PiiEnum, str]
 

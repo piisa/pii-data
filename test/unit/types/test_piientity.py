@@ -43,7 +43,25 @@ def test22_object_str():
     assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
 
 
-def test30_values():
+def test30_object_info():
+    """Test object creation, from info"""
+    info = mod.PiiEntityInfo(PiiEnum.CREDIT_CARD, "any", "fr")
+    obj = mod.PiiEntity(info, "3412 2121 4121 4212", "12", 10)
+    assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
+
+def test31_object_extra():
+    """Test object creation, extra fields"""
+    info = mod.PiiEntityInfo(PiiEnum.CREDIT_CARD, "any", "fr")
+    obj = mod.PiiEntity(info, "3412 2121 4121 4212", "12", 10,
+                        process={"stage": "detect", "score": 0.8},
+                        docid="id1", detector="3")
+    assert str(obj) == "<PiiEntity CREDIT_CARD:3412 2121 4121 4212>"
+    assert obj.fields["process"] == {"stage": "detect", "score": 0.8}
+    assert obj.fields["docid"] == "id1"
+    assert obj.fields["detector"] == "3"
+
+
+def test100_values():
     """Test object values"""
     obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212",
                               "12", 15)
@@ -54,7 +72,7 @@ def test30_values():
     assert len(obj) == 19
 
 
-def test40_eq():
+def test110_eq():
     """Test object equality"""
     obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
 
@@ -74,7 +92,7 @@ def test40_eq():
     assert obj != obj2
 
 
-def test50_dict():
+def test200_dict():
     """Test object as dict"""
     obj = mod.PiiEntity.build(PiiEnum.CREDIT_CARD, "3412 2121 4121 4212", "12", 15)
     exp = {'type': 'CREDIT_CARD',
@@ -86,7 +104,7 @@ def test50_dict():
     assert obj.asdict() == exp
 
 
-def test51_dict_extra():
+def test210_dict_extra():
     """Test object as dict, extra fields"""
     obj = mod.PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15,
                               subtype="SSN", country="us", lang="en")
@@ -99,11 +117,36 @@ def test51_dict_extra():
            'lang': 'en',
            'subtype': 'SSN'}
 
-
     assert obj.asdict() == exp
 
 
-def test60_from_dict():
+def test220_object_extra():
+    """Test object creation, extra fields"""
+    info = mod.PiiEntityInfo(PiiEnum.GOV_ID, "en", "us", "SSN")
+    obj = mod.PiiEntity(info, "12345678", "12", 10,
+                        process={"stage": "detect", "score": 0.8},
+                        docid="id1", detector="3")
+
+    exp = {
+        'type': 'GOV_ID',
+        'chunkid': '12',
+        'end': 18,
+        'start': 10,
+        'value': '12345678',
+        'country': 'us',
+        'lang': 'en',
+        'subtype': 'SSN',
+        "process": {
+            "stage": "detect",
+            "score": 0.8
+        },
+        "docid": "id1",
+        "detector": "3"
+    }
+    assert obj.asdict() == exp
+
+
+def test300_from_dict():
     """Test object from dict"""
     pii = {'type': 'CREDIT_CARD',
            'chunkid': '12',
@@ -118,7 +161,32 @@ def test60_from_dict():
     assert got.asdict() == pii
 
 
-def test61_from_dict_err():
+def test310_from_dict_extra():
+    """Test object from dict"""
+    pii = {
+        'type': 'GOV_ID',
+        'chunkid': '12',
+        'end': 18,
+        'start': 10,
+        'value': '12345678',
+        'country': 'us',
+        'lang': 'en',
+        'subtype': 'SSN',
+        "process": {
+            "stage": "detect",
+            "score": 0.8
+        },
+        "docid": "id1",
+        "detector": "3"
+    }
+    got = mod.PiiEntity.fromdict(pii)
+
+    exp = mod.PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 10)
+    assert exp == got
+    assert got.asdict() == pii
+
+
+def test320_from_dict_err():
     """Test object from dict, invalid dict"""
     pii = {'end': 34,
            'start': 15,
@@ -127,7 +195,8 @@ def test61_from_dict_err():
     with pytest.raises(InvArgException):
         mod.PiiEntity.fromdict(pii)
 
-def test62_from_dict_err():
+
+def test330_from_dict_err():
     """Test object from dict, invalid dict"""
     pii = {'type': 'not a type',
            'end': 34,
