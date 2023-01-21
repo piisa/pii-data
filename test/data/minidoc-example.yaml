@@ -1,0 +1,12 @@
+format: 'piisa:srcdocument:v1'
+chunks:
+- id: 1
+  data: |-
+    PII management specification
+- id: 2
+  data: |-
+    Overall architecture
+  chunks:
+  - id: 3
+    data: |-
+      The general structure of a framework dealing with PII management could be visualized as the following diagram:

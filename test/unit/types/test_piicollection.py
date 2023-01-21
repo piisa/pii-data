@@ -10,7 +10,7 @@ import pytest
 from pii_data.types.piienum import PiiEnum
 from pii_data.types.piientity import PiiEntity
 
-import pii_data.types.piicollection as mod
+import pii_data.types.piicollection.collection as mod
 
 
 def fname(name: str) -> str:
@@ -24,35 +24,30 @@ def readfile(name: str) -> str:
 
 @pytest.fixture
 def fix_timestamp(monkeypatch):
-
-    mydatetime = Mock(spec=datetime.datetime)
-    mydatetime.utcnow = Mock(return_value=mydatetime)
-    mydatetime.replace = Mock(return_value=mydatetime)
-    mydatetime.isoformat = Mock(return_value = "2000-01-01T00:00:00Z")
-
-    #print("ISINSTANCE", isinstance(mydatetime, datetime.datetime))
-    datemock = Mock()
-    datemock.datetime = mydatetime
-
-    a = datemock.datetime.utcnow().replace()
-    #print("A", a, isinstance(a, datetime.datetime))
-    monkeypatch.setattr(mod, 'datetime', datemock)
+    """
+    Monkey-patch the piicollection module to ensure the timestamps it produces
+    have always the same value
+    """
+    mock_datetime = Mock()
+    mock_datetime.utcnow.return_value = datetime.datetime(2000, 1, 1)
+    mock_datetime.side_effect = lambda *a, **kw: datetime.datetime(*a, **kw)
+    monkeypatch.setattr(mod, 'datetime', mock_datetime)
 
 
 # ----------------------------------------------------------------
 
 def test100_piidetector():
     """Test object creation"""
-    obj = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
+    obj = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
     assert str(obj) == "<PiiDetector PIISA/PII Finder/0.1.0>"
 
 
 def test110_piidetector():
     """Test object value"""
-    obj = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    assert obj.as_dict() == {"name": "PII Finder",
-                             "version": "0.1.0",
-                             "source": "PIISA"}
+    obj = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    assert obj.asdict() == {"name": "PII Finder",
+                            "version": "0.1.0",
+                            "source": "PIISA"}
 
 
 def test200_piicollection():
@@ -65,47 +60,23 @@ def test210_piicollection_add():
     """Test adding PII entity"""
     obj = mod.PiiCollection(lang="pt", docid="doc1")
 
-    det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    ent = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
+    det = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    ent = PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
 
-    obj.entity(ent, det)
+    obj.add(ent, det)
     assert len(obj) == 1
 
 
-def test220_piicollection_dump_ndjson(fix_timestamp):
-    """Test NDJSON dump"""
-    obj = mod.PiiCollection(lang="pt", docid="doc1")
-
-    det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    ent1 = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
-    ent2 = PiiEntity(PiiEnum.CREDIT_CARD, "1234567890", chunk="30", pos=60,
-                     country="br")
-    obj.entity(ent1, det)
-    obj.entity(ent2, det)
-    assert len(obj) == 2
-
-    # NDJSON format
-    try:
-        with tempfile.NamedTemporaryFile(mode="wt", delete=False) as f:
-            obj.dump(f)
-        got = readfile(f.name)
-    finally:
-        Path(f.name).unlink()
-
-    exp = readfile(fname('piicollection.ndjson'))
-    assert exp == got
-
-
-def test230_piicollection_dump_json(fix_timestamp):
+def test220_piicollection_dump_json(fix_timestamp):
     """Test JSON dump"""
     obj = mod.PiiCollection(lang="pt", docid="doc1")
 
-    det = mod.PiiDetector("PII Finder", "0.1.0", "PIISA")
-    ent1 = PiiEntity(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
-    ent2 = PiiEntity(PiiEnum.CREDIT_CARD, "1234567890", chunk="30", pos=60,
-                     country="br")
-    obj.entity(ent1, det)
-    obj.entity(ent2, det)
+    det = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    ent1 = PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
+    ent2 = PiiEntity.build(PiiEnum.CREDIT_CARD, "1234567890", chunk="30",
+                           pos=60, country="br")
+    obj.add(ent1, det)
+    obj.add(ent2, det)
     assert len(obj) == 2
 
     # JSON format
@@ -119,7 +90,5 @@ def test230_piicollection_dump_json(fix_timestamp):
     exp = readfile(fname('piicollection.json'))
     assert json.loads(exp) == json.loads(got)
 
-
     #with open(fname('piicollection.ndjson'), "w", encoding="utf-8") as f:
     #          obj.dump(f, format="ndjson")
-

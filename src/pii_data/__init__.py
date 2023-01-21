@@ -1,5 +1,2 @@
 # Package version
-VERSION = "0.0.2"
-
-# Data format version
-FORMAT_VERSION = "0.2.1"
+VERSION = "0.1.3"

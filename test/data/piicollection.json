@@ -1,8 +1,9 @@
 {
   "metadata": {
-    "date": "2000-01-01T00:00:00Z",
-    "format": "pii:pii-collection",
-    "format_version": "0.2.1",
+    "date": "2000-01-01T00:00:00+00:00",
+    "format": "piisa:pii-collection:v1",
+    "lang": "pt",
+    "stage": "detection",
     "detectors": {
       "1": {
         "name": "PII Finder",

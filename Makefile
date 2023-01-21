@@ -40,6 +40,13 @@ rebuild: clean build
 version:
 	@echo "$(VERSION)"
 
+backup:
+	tar cvjf pii-data-$(VERSION).tgz \
+	  --exclude=__pycache__ \
+	  doc src test \
+	  CHANGES.txt LICENSE README.md \
+	  Makefile MANIFEST.in requirements.txt setup.py
+
 # --------------------------------------------------------------------------
 
 TEST ?= test/unit
@@ -60,7 +67,7 @@ unit-verbose: venv pytest
 $(PKGFILE): $(VERSION_FILE) setup.py
 	$(PYTHON) setup.py sdist
 
-install: $(PKGFILE)
+install: $(PKGFILE) venv
 	$(VENV)/bin/pip install $(PKGFILE)
 
 uninstall:
@@ -72,6 +79,7 @@ reinstall: uninstall clean pkg install
 $(VENV):
 	BASE=$$(basename "$@"); test -d "$$BASE" || mkdir -p "$$BASE"
 	$(BASE_PYTHON) -m venv $@
+	$@/bin/pip install --upgrade pip
 	$@/bin/pip install wheel
 	$@/bin/pip install -r requirements.txt
 
@@ -81,14 +89,16 @@ $(VENV)/bin/pytest:
 
 # -----------------------------------------------------------------------
 
-$(VENV)/bin/twine:
+TWINE := $(VENV)/bin/twine
+
+$(TWINE):
 	$(VENV)/bin/pip install twine
 
-upload-check: $(PKGFILE) $(VENV)/bin/twine
-	$(VENV)/bin/twine check $(PKGFILE)
+upload-check: $(PKGFILE) $(TWINE)
+	$(TWINE) check $(PKGFILE)
 
-upload-test: $(PKGFILE)
-	$(VENV)/bin/twine upload --repository pypitest $(PKGFILE)
+upload-test: $(PKGFILE) $(TWINE)
+	$(TWINE) upload --repository pypitest $(PKGFILE)
 
-upload: $(PKGFILE)
-	$(VENV)/bin/twine upload $(PKGFILE)
+upload: $(PKGFILE) $(TWINE)
+	$(TWINE) upload $(PKGFILE)

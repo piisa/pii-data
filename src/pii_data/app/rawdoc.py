@@ -1,47 +1,35 @@
 """
-Simple script to read & write YAML Source Documents for PII Detection
+Simple script to convert a YAML Source Document to raw text
 """
 
 from argparse import ArgumentParser, Namespace
 
-from ..helper import load_yaml
-from ..doc import load_raw, dump_raw, dump_yaml
-
-
-
-def to_raw(inputfile: str, outputfile: str, indent: int):
-    """
-    Convert a YAML PII Source Document to plain text
-    """
-    doc = load_yaml(inputfile)
-    dump_raw(doc, outputfile, indent)
-
-
-def from_raw(inputfile: str, outputfile: str, indent: int):
-    """
-    Read a raw text file and convert it to PII Source Document
-    """
-    doc = load_raw(inputfile, indent)
-    dump_yaml(doc, outputfile, indent)
+from ..types.localdoc import LocalSrcDocumentFile
 
 
 # --------------------------------------------------------------------------
 
 def parse_args():
-    args = ArgumentParser(description='Convert from YAML PII Source Doc to plain raw text or viceversa')
+    args = ArgumentParser(description='Read a YAML PII Source Doc and write it out (to either YAML or to plain raw text')
     args.add_argument('inputdoc')
-    args.add_argument('outputdoc')
-    args.add_argument('--indent', type=int, default=0)
+    args.add_argument('outputdoc', help="output file (the file extension will decide the format)")
+    args.add_argument('--indent', type=int, default=0, help="for tree documents and plain text output, the indent for each level")
+    args.add_argument('--context-fields', nargs="+", metavar="FIELDNAME",
+                      help="context fields to add")
     return args.parse_args()
 
 
 def main(args: Namespace = None):
+
     if not args:
         args = parse_args()
-    if args.inputdoc.endswith(('.yml', '.yaml')):
-        to_raw(args.inputdoc, args.outputdoc, args.indent)
-    else:
-        from_raw(args.inputdoc, args.outputdoc, args.indent)
+
+    # Read document
+    doc = LocalSrcDocumentFile(args.inputdoc)
+
+    # Write it
+    doc.dump(args.outputdoc, context_fields=args.context_fields,
+             indent=args.indent)
 
 
 if __name__ == '__main__':

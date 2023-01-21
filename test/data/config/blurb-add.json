@@ -1,0 +1,11 @@
+{
+  "format": "piisa:config:blurb:v1",
+  "foo": "bar2",
+  "foolist": [
+    "elem2"
+  ],
+  "foodict": {
+    "bar2": 50,
+    "bar3": ["elem"]
+  }
+}

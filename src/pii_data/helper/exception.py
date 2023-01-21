@@ -1,5 +1,5 @@
 """
-A simple exception hiearchy
+A simple exception hierarchy
 """
 
 
@@ -27,7 +27,28 @@ class ProcException(PiiDataException):
     pass
 
 
-class PiiUnimplemented(PiiDataException):
+class InvalidDocument(ProcException):
+    """
+    An document invalid for some reason
+    """
+    pass
+
+
+class ConfigException(ProcException):
+    """
+    A problem with a configuration
+    """
+    pass
+
+
+class FileException(ProcException):
+    """
+    A problem with a file
+    """
+    pass
+
+
+class UnimplementedException(PiiDataException):
     """
     Unimplemented methods/functions
     """

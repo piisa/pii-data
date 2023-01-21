@@ -1,0 +1,17 @@
+{
+  "format": "piisa:config:full:v1",
+  "config": [
+    {
+      "format": "piisa:config:blurb:v1",
+      "blob": "abcd"
+    },
+    {
+      "format": "piisa:config:blurb2:v1",
+      "foo": "bar",
+      "foodict": {
+	"bar1": null,
+	"bar2": 43
+      }
+    }
+  ]
+}
