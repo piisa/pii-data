@@ -1,5 +1,17 @@
 """
-A simple exception hierarchy
+A simple exception hierarchy:
+
+  PiiDataException
+    |
+    |-> InvArgException
+    |-> ProcException
+    |     |
+    |     |-> InvalidDocument
+    |     |-> ConfigException
+    |     |-> FileException
+    |
+    |-> UnimplementedException
+
 """
 
 
