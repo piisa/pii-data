@@ -129,7 +129,9 @@ def load_config(configlist: TYPE_CONFIG_LIST,
          section, i.e. a dictionary {configsection: configdata}
     """
     # Sanitize input arguments
-    if isinstance(configlist, (str, Path, Dict)):
+    if configlist is None:
+        configlist = []
+    elif isinstance(configlist, (str, Path, Dict)):
         configlist = [configlist]
     if formats:
         if isinstance(formats, str):
