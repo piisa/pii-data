@@ -1,4 +1,5 @@
 v. 0.3.0
+ * PiiEntityInfo made immutable
  * refactored & improved config reading
  * new functionality in helper.io: read remote files
  * json dump indent parameter modified

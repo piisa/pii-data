@@ -13,7 +13,7 @@ from typing import Dict, Any, Union
 
 # --------------------------------------------------------------------------
 
-@dataclass(order=True)
+@dataclass(order=True, frozen=True)
 class PiiEntityInfo:
     """
     Fixed fields in a PII entity instance
