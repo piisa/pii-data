@@ -1,14 +1,17 @@
-v. 0.3.0
+# Changelog
+
+## v. 0.3.0
  * PiiEntityInfo made immutable
+ * added clone() class method to PiiCollection
  * refactored & improved config reading
  * new functionality in helper.io: read remote files
- * json dump indent parameter modified
-     - allow no indent specification
-     - only close output file if we opened it
-     - allow additional formatting arguments
+ * json dump parameters modified
+    - allow no-indent specification
+    - only close output file if we opened it
+    - allow additional formatting arguments
  * added logger wrapper
 
-v. 0.2.0
+## v. 0.2.0
  * DocumentChunk class refactored into a full class, with equality method and
    asdict()
  * Refactored dump code; dump to JSON
@@ -31,7 +34,7 @@ v. 0.2.0
    document "default_lang" if not present
  * some bugfixes
 
-v. 0.1.0
+## v. 0.1.0
  * updated for data spec 0.4.0
  * added two iterators
     - iter_full, including iteration with context
@@ -43,6 +46,6 @@ v. 0.1.0
  * chunk payload change from `text` to `data`, to make it more generic
  * added format indicator strings to output dump
 
-v. 0.0.3
+## v. 0.0.3
  * added BaseSourceDocument and BaseSourceDocument classes
  * minor fixes in other data structures

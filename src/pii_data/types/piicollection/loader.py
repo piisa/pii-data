@@ -75,7 +75,7 @@ class PiiCollectionLoader(PiiCollection):
         base_ext = base_extension(filename)
         if base_ext == ".json":
             self.load_json(filename)
-        elif base_ext == ".ndjson":
+        elif base_ext in (".ndjson", ".jsonl"):
             with openfile(filename, encoding="utf-8") as f:
                 self.load_ndjson(f)
         else:
