@@ -67,7 +67,41 @@ def test210_piicollection_add():
     assert len(obj) == 1
 
 
-def test220_piicollection_dump_json(fix_timestamp):
+def test320_piicollection_fields(fix_timestamp):
+    """Test object fields"""
+    obj = mod.PiiCollection(lang="pt", docid="doc1")
+
+    det = mod.PiiDetector("PIISA", "PIICollectionTest", "0.1.0")
+    ent1 = PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
+    ent2 = PiiEntity.build(PiiEnum.CREDIT_CARD, "1234567890", chunk="30",
+                           pos=60, country="br")
+    obj.add(ent1, det)
+    obj.add(ent2, det)
+
+    det = {
+        1: {'name': 'PIICollectionTest', 'source': 'PIISA', 'version': '0.1.0'}
+    }
+    got = obj.get_detectors()
+    assert got == det
+
+    got = obj.get_detector(1)
+    assert isinstance(got, mod.PiiDetector)
+    assert got.asdict() == det[1]
+    d = mod.PiiDetector(**det[1])
+    assert got == d
+
+    exp = {
+        'format': 'piisa:pii-collection:v1',
+        'lang': 'pt',
+        'date': datetime.datetime(2000, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+        'stage': 'detection',
+        'detectors': det
+    }
+    got = obj.get_header()
+    assert got == exp
+
+
+def test300_piicollection_dump_json(fix_timestamp):
     """Test JSON dump"""
     obj = mod.PiiCollection(lang="pt", docid="doc1")
 
@@ -92,3 +126,34 @@ def test220_piicollection_dump_json(fix_timestamp):
 
     #with open(fname('piicollection.ndjson'), "w", encoding="utf-8") as f:
     #          obj.dump(f, format="ndjson")
+
+
+
+
+def test310_piicollection_clone(fix_timestamp):
+    """Test clone"""
+    obj1 = mod.PiiCollection(lang="pt", docid="doc1")
+
+    det = mod.PiiDetector("PIISA", "PII Finder", "0.1.0")
+    ent1 = PiiEntity.build(PiiEnum.GOV_ID, "12345678", "12", 15, country="br")
+    ent2 = PiiEntity.build(PiiEnum.CREDIT_CARD, "1234567890", chunk="30",
+                           pos=60, country="br")
+    obj1.add(ent1, det)
+    obj1.add(ent2, det)
+    assert len(obj1) == 2
+
+    obj2 = mod.PiiCollection.clone(obj1)
+    for ent in obj1:
+        obj2.add(ent)
+    assert len(obj2) == 2
+
+    # JSON format
+    try:
+        with tempfile.NamedTemporaryFile(mode="wt", delete=False) as f:
+            obj2.dump(f, format='json')
+        got = readfile(f.name)
+    finally:
+        Path(f.name).unlink()
+
+    exp = readfile(fname('piicollection.json'))
+    assert json.loads(exp) == json.loads(got)

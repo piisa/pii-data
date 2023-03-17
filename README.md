@@ -1,5 +1,10 @@
 # pii-data
 
+[![version](https://img.shields.io/pypi/v/pii-data)](https://pypi.org/project/pii-data)
+[![changelog](https://img.shields.io/badge/change-log-blue)](CHANGES.md)
+[![license](https://img.shields.io/pypi/l/pii-data)](LICENSE)
+[![build status](https://github.com/piisa/pii-data/actions/workflows/pii-data-pr.yml/badge.svg)](https://github.com/piisa/pii-data/actions)
+
 This package provides base data structures for the management of PII i.e.
 Personally Identifiable Information (it does *not* contain code for processing
 documents, or extracting PII from documents).
@@ -37,7 +42,8 @@ entity contains all the information needed to correctly identify one PII
 instance and locate it in the document it belongs to.
 
 These are the PII data classes defined:
- * [PiiEntity]: one PII instance
+ * [PiiEntity]: a PII instance (which in turn contains a `PiiEntityInfo` 
+   object)
  * [PiiCollection]: the full collection of PII (the additional
    `PiiCollectionLoader` subclass can load a collection from a JSON file)
  * `PiiDetector`: an object to describe the module used to generate a given

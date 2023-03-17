@@ -14,8 +14,8 @@ NAME := pii-data
 #   3. a default
 VENV ?= $(shell echo $${VIRTUAL_ENV:-/opt/venv/pii})
 
-BASE_PYTHON := python3.8
-PYTHON ?= $(VENV)/bin/python3
+PYTHON ?= python3.8
+VENV_PYTHON ?= $(VENV)/bin/python3
 
 # --------------------------------------------------------------------------
 
@@ -29,6 +29,7 @@ PKGFILE := dist/$(NAME)-$(VERSION).tar.gz
 
 all:
 	@echo "VERSION = $(VERSION)"
+	@echo "use 'make pkg' to build the package"
 
 build pkg: $(PKGFILE)
 
@@ -40,9 +41,9 @@ rebuild: clean build
 version:
 	@echo "$(VERSION)"
 
-backup:
-	tar cvjf pii-data-$(VERSION).tgz \
-	  --exclude=__pycache__ \
+backup: version
+	tar cvjf $(NAME)-$(VERSION).tgz \
+	  --exclude=__pycache__ --exclude=pii_data.egg-info \
 	  doc src test \
 	  CHANGES.txt LICENSE README.md \
 	  Makefile MANIFEST.in requirements.txt setup.py
@@ -65,7 +66,7 @@ unit-verbose: venv pytest
 # --------------------------------------------------------------------------
 
 $(PKGFILE): $(VERSION_FILE) setup.py
-	$(PYTHON) setup.py sdist
+	$(VENV_PYTHON) setup.py sdist
 
 install: $(PKGFILE) venv
 	$(VENV)/bin/pip install $(PKGFILE)
@@ -78,7 +79,7 @@ reinstall: uninstall clean pkg install
 
 $(VENV):
 	BASE=$$(basename "$@"); test -d "$$BASE" || mkdir -p "$$BASE"
-	$(BASE_PYTHON) -m venv $@
+	$(PYTHON) -m venv $@
 	$@/bin/pip install --upgrade pip
 	$@/bin/pip install wheel
 	$@/bin/pip install -r requirements.txt

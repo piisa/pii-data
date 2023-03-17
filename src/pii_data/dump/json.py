@@ -6,7 +6,7 @@ from types import MappingProxyType
 
 import json
 
-from typing import List, Set
+from typing import List, Set, Union
 
 from .utils import ChunkIterWrapper
 from ..defs import FMT_SRCDOCUMENT
@@ -74,10 +74,17 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(obj)
 
 
-def dump_json(doc: SrcDocument, outputfile: str, indent: int = 2,
-              context_fields: List[str] = None):
+def dump_json(doc: SrcDocument, outputfile: str,
+              context_fields: List[str] = None,
+              indent: Union[int, bool] = None, **kwargs):
     """
     Dump the data for a PII Source Document into a JSON file.
+     :param doc: document to dump
+     :param outputfile: output destination
+     :param context_fields: ignored, for compatibility with YAML output
+     :param indent: JSON indent level. If not given (or `None`) a default
+        will automatically be assigned; to indicate `None` use `False`
+     :param kwargs: additional arguments for the JSON dumper
     """
 
     # Construct a serializable version of the document
@@ -85,7 +92,14 @@ def dump_json(doc: SrcDocument, outputfile: str, indent: int = 2,
             "header": doc.metadata,
             "chunks": ChunkIterWrapper(doc.iter_struct())}
 
-    # Write it
-    with openfile(outputfile, "wt", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=indent,
-                  cls=CustomJSONEncoder)
+    # Prepare JSON encoder parameters
+    indent = None if indent is False else 2 if indent is None else indent
+    dump_args = {"ensure_ascii": False, "indent": indent, **kwargs}
+
+    # Write it. Ensure we only close it if we opened it
+    f = openfile(outputfile, "wt", encoding="utf-8")
+    try:
+        json.dump(data, f, cls=CustomJSONEncoder, **dump_args)
+    finally:
+        if f != outputfile:
+            f.close()

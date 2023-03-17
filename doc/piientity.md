@@ -8,7 +8,7 @@ document.
 An instantiated PiiEntity object has three attributes:
  * `info`: a `PiiEntityInfo` instance that informs about base features
    of the entity (entity type, subtype, language, country)
- * `fields`: a dictionary describing this PII instance values
+ * `fields`: a dictionary describing the values for this PII instance
  * `pos`: an integer indicating the character-based position of the PII in
    the document chunk it was detected in
 
@@ -24,7 +24,7 @@ This is an object with these fields:
 
 ### Dictionary of fields
 
-The `fields` dictionary, as mention, is one of the object attributes.
+The `fields` dictionary, as mentioned, is one of the object attributes.
 It always contains:
  * `type`: a string describing the PII main type [*]
  * `value`: the string with the PII expression in the document
@@ -33,7 +33,8 @@ It always contains:
 And it can also contain the following optional fields:
  * `docid`: an identifier for the document the PII belongs to
  * `detector`: the index of the detector that generated the PII
- * `process`: information about the processing stage
+ * `process`: information about the processing stage (if it exists, this is
+   itself a dictionary, with fields like `stage` or `action`)
 
 Note that the PiiEntity object contains no information about the end span of
 the entity value. Instead, this can be computed by adding the _length_ of the
@@ -51,7 +52,7 @@ attributes, plus `start` and `end` elements (computed from the `pos`
 attribute and the entity length) that give the entity position in the document
 chunk.
 
-There is also a class method `PiiEntity.from_dict()` that takes such a
+There is also a class method `PiiEntity.fromdict()` that takes such a
 dictionary and recreates and returns the object.
 
  

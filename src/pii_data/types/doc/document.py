@@ -62,7 +62,7 @@ class SrcDocument:
         Set the document identifier inside the document metadata
         If an id is nor passed, a random UUID will be used.
         """
-        self._meta[META_DOC]["id"] = id or str(uuid.uuid4())
+        self._meta[META_DOC]["id"] = str(id or uuid.uuid4())
 
 
     def add_metadata(self, **metadata):

@@ -80,7 +80,7 @@ class BaseLocalSrcDocument(SrcDocument):
         return iter(self._chk)
 
 
-    def dump(self, outname: str, format: str = None, indent: int = 0,
+    def dump(self, outname: str, format: str = None, indent: int = None,
              context_fields: List[str] = None):
         """
         Dump the document to an output file
@@ -179,8 +179,8 @@ class LocalSrcDocument:
 # --------------------------------------------------------------------------
 
 def dump_file(doc: SrcDocument, outname: str,
-              format: str = None, indent: int = 0,
-              context_fields: List[str] = None):
+              format: str = None, indent: int = None,
+              context_fields: List[str] = None, **kwargs):
     """
     Dump a document to an output file
       :param outname: name of the output file
@@ -188,7 +188,7 @@ def dump_file(doc: SrcDocument, outname: str,
         "yml", "txt". If not present, the format will try to be
         deduced from the file extension
       :param indent: for text output and tree documents, indent used to
-         indicate hierarchy level
+         indicate hierarchy level; for json indent level
       :param context_fields: for YAML/JSON output, specific set of context
          fields that will be dumped, if present in the iter_struct() results.
          If not passed, all existing context fields will be added *except* a
@@ -209,7 +209,8 @@ def dump_file(doc: SrcDocument, outname: str,
     if format in ("yaml", "yml"):
         dump_yaml(doc, outname, context_fields=context_fields)
     elif format == "json":
-        dump_json(doc, outname, indent=indent, context_fields=context_fields)
+        dump_json(doc, outname, context_fields=context_fields,
+                  indent=indent, **kwargs)
     elif format in ("txt", "text"):
         dump_text(doc, outname, indent=indent)
     else:

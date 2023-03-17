@@ -5,7 +5,7 @@ A class to describe a list of detected PII entities
 from datetime import datetime, timezone
 import json
 
-from typing import TextIO, Dict, Iterator
+from typing import TextIO, Dict, Iterator, TypeVar
 
 from ...defs import FMT_PIICOLLECTION
 from ...helper.json_encoder import CustomJSONEncoder
@@ -39,6 +39,9 @@ class PiiDetector:
         if method:
             self.fields["method"] = method
 
+    def __eq__(self, other) -> bool:
+        return isinstance(other, PiiDetector) and other._id == self._id
+
     def __repr__(self) -> str:
         return f"<PiiDetector {self._id}>"
 
@@ -49,6 +52,10 @@ class PiiDetector:
         return self.fields
 
 
+# -----------------------------------------------------------------------
+
+
+T = TypeVar('T', bound='PiiCollection')
 
 class PiiCollection:
     """
@@ -57,6 +64,20 @@ class PiiCollection:
 
     Iterating it returns the instances of PiiEntity object contained in it.
     """
+
+    @classmethod
+    def clone(cls, piic: T) -> T:
+        """
+        Clone a PiiCollection into an object with the same generic information
+        (header & detectors) but no stored PiiEntity objects
+        """
+        df = piic.defaults
+        new_piic = cls(df.get("lang"), df.get("docid"))
+        new_piic._header = piic.get_header(False)
+        new_piic.detectors = {k: PiiDetector(**v)
+                              for k, v in piic.get_detectors().items()}
+        return new_piic
+
 
     def __init__(self, lang: str = None, docid: str = None):
         """
@@ -73,11 +94,11 @@ class PiiCollection:
             self.defaults['docid'] = docid
 
         # An encoder for generating NDJSON output
-        self.encoder = CustomJSONEncoder(ensure_ascii=False)
+        self._encoder = CustomJSONEncoder(ensure_ascii=False)
 
         # Data contained in the object
+        self._detector_map = {}
         self.detectors = {}
-        self.detector_map = {}
         self.pii = []
 
         # Initialize the collection header
@@ -89,16 +110,34 @@ class PiiCollection:
 
 
     def _set_header(self, header: Dict):
-        self._header = header.copy()
+        self._header = header
 
 
-    def header(self) -> Dict:
+    def get_detectors(self) -> Dict:
         """
-        Return the collection header
+        Return the detectors from this collection
         """
-        self._header["detectors"] = {k: v.asdict()
-                                     for k, v in self.detectors.items()}
-        return self._header
+        return {k: v.asdict() for k, v in self.detectors.items()}
+
+
+    def get_detector(self, idx: int) -> PiiDetector:
+        """
+        Return a detector from this collection
+        """
+        return self.detectors[idx]
+
+
+    def get_header(self, detectors: bool = True) -> Dict:
+        """
+        Return the header of the collection object, including the detectors
+        """
+        hdr = self._header.copy()
+        if detectors:
+            hdr["detectors"] = self.get_detectors()
+        return hdr
+
+    # Old name
+    header = get_header
 
 
     def stage(self, value: str = None) -> str:
@@ -127,14 +166,15 @@ class PiiCollection:
 
     def add_detector(self, detector: PiiDetector) -> str:
         """
-        Add a new detector to the header. Returns the detector index
+        Add a new detector to the header (if not there yet).
+        Returns the detector index
         """
-        if detector._id not in self.detector_map:
+        if detector._id not in self._detector_map:
             num = len(self.detectors) + 1
             self.detectors[num] = detector
-            self.detector_map[detector._id] = num
+            self._detector_map[detector._id] = num
         self.stage('detection')
-        return self.detector_map[detector._id]
+        return self._detector_map[detector._id]
 
 
     def add(self, entity: PiiEntity, detector: PiiDetector = None):
@@ -173,13 +213,13 @@ class PiiCollection:
         For `json` format, all passed additional arguments will be added to
         the JSON serializer
         """
-        header = self.header()
+        header = self.get_header()
 
         if format in ("ndjson", "jsonl"):
 
-            print(self.encoder.encode(header), file=out)
+            print(self._encoder.encode(header), file=out)
             for pii in self.pii:
-                print(self.encoder.encode(pii), file=out)
+                print(self._encoder.encode(pii), file=out)
 
         elif format == "json":
 
