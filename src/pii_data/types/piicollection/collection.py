@@ -5,7 +5,7 @@ A class to describe a list of detected PII entities
 from datetime import datetime, timezone
 import json
 
-from typing import TextIO, Dict, Iterator, TypeVar
+from typing import TextIO, Dict, Iterator, TypeVar, Union
 
 from ...defs import FMT_PIICOLLECTION
 from ...helper.json_encoder import CustomJSONEncoder
@@ -52,10 +52,14 @@ class PiiDetector:
         return self.fields
 
 
+TYPE_DET_OBJ = Dict[int, PiiDetector]
+TYPE_DET_DICT = Dict[int, Dict]
+TYPE_DET_ALL = Union[TYPE_DET_DICT, TYPE_DET_OBJ]
+
 # -----------------------------------------------------------------------
 
+T_PIIC = TypeVar('T', bound='PiiCollection')
 
-T = TypeVar('T', bound='PiiCollection')
 
 class PiiCollection:
     """
@@ -66,7 +70,7 @@ class PiiCollection:
     """
 
     @classmethod
-    def clone(cls, piic: T) -> T:
+    def clone(cls, piic: T_PIIC) -> T_PIIC:
         """
         Clone a PiiCollection into an object with the same generic information
         (header & detectors) but no stored PiiEntity objects
@@ -102,27 +106,35 @@ class PiiCollection:
         self.pii = []
 
         # Initialize the collection header
-        self._set_header({
+        hdr = {
             "date": datetime.utcnow().replace(tzinfo=timezone.utc),
-            "format": FMT_PIICOLLECTION,
-            "lang": self.defaults.get("lang")
-        })
+            "format": FMT_PIICOLLECTION
+        }
+        if 'lang' in self.defaults:
+            hdr["lang"] = self.defaults["lang"]
+        self._set_header(hdr)
 
 
     def _set_header(self, header: Dict):
         self._header = header
 
 
-    def get_detectors(self) -> Dict:
+    def get_detectors(self, asdict: bool = True) -> TYPE_DET_ALL:
         """
-        Return the detectors from this collection
+        Return the detectors from this collection, as a dictionary indexed
+        by detector index
+         :param asdict: return detectors as dictionaries (else as PiiDetector
+            objects)
         """
-        return {k: v.asdict() for k, v in self.detectors.items()}
+        if not asdict:
+            return self.detectors
+        else:
+            return {k: v.asdict() for k, v in self.detectors.items()}
 
 
     def get_detector(self, idx: int) -> PiiDetector:
         """
-        Return a detector from this collection
+        Return a detector from this collection, given its detector index
         """
         return self.detectors[idx]
 
@@ -231,4 +243,3 @@ class PiiCollection:
 
         else:
             raise InvArgException("unknown output format: {}", format)
-

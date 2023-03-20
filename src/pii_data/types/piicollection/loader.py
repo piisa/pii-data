@@ -31,7 +31,8 @@ class PiiCollectionLoader(PiiCollection):
 
     def _load_detectors(self, detectors: Dict) -> Dict:
         try:
-            self.detectors = {k: PiiDetector(**v) for k, v in detectors.items()}
+            self.detectors = {int(k): PiiDetector(**v)
+                              for k, v in detectors.items()}
         except Exception as e:
             raise ProcException("error reading detector info from header: {}", e)
         self.detector_map = {v._id: k for k, v in self.detectors.items()}
@@ -47,6 +48,7 @@ class PiiCollectionLoader(PiiCollection):
         except json.JSONDecodeError as e:
             raise FileException("cannot load collection '{}': {}", filename,
                                 e) from e
+
         meta = data['metadata']
         check_format(meta, filename)
         self._set_header(meta)

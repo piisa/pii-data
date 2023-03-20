@@ -1,5 +1,9 @@
 # Changelog
 
+## v. 0.3.1
+ * fix: ensure loaded PiiCollection objects have integer ids for Detectors
+ * fix: only add lang to PiiCollection header if defined
+ 
 ## v. 0.3.0
  * PiiEntityInfo made immutable
  * added clone() class method to PiiCollection
