@@ -39,6 +39,7 @@ class PiiChunkIterator:
         """
         Return the list of all PiiEntity instances in the collection that
         correspond to the passed chunk id, sorted by their position in
-        the chunk
+        the chunk.
+        Note: it should be called with the chunkids in document order.
         """
         return sorted(self._chunk_pii(chunkid), key=attrgetter("pos"))

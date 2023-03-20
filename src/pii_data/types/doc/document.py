@@ -20,7 +20,7 @@ TYPE_META = Dict[str, Dict]
 class SrcDocument:
     """
     An abstract base object to hold the data for a document to be processed.
-    Child classes need to provide at least a get_chunks method
+    Child classes need to provide at least a get_chunks() method
     """
 
     def __init__(self, metadata: TYPE_META = None, iter_options: Dict = None):

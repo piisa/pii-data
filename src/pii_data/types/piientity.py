@@ -42,10 +42,10 @@ TYPE_PTYPE = Union[PiiEnum, str]
 
 class PiiEntity:
     """
-    A detected PII entity. It contains as fields:
-      * type, a PiiEnum that describes the type of the detected PII
-      * fields: a dictionary holding the PII info
-      * pos, the character position of the PII inside the passed document
+    A detected PII entity. It contains as attributes:
+      * type: a PiiEnum that describes the type of the detected PII
+      * fields: a dictionary holding the info for the PII instance
+      * pos: the character position of the PII inside the document chunk
     """
 
     __slots__ = "info", "fields", "pos"
@@ -64,7 +64,8 @@ class PiiEntity:
           :param lang: language associated with the PII
           :param country: country associated with the PII
           :param subtype: PII subtype
-        Additional optional arguments are as given by EXTRA_FIELDS
+        Additional optional arguments for the fields attribute are as given
+        by EXTRA_FIELDS
         """
         # Define type
         if not isinstance(ptype, PiiEnum):
