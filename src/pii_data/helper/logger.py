@@ -12,14 +12,17 @@ class Dummy:
     """
     Do-nothing logger
     """
+    def __repr__(self) -> str:
+        return "<PII DummyLogger>"
+
     def __getattr__(self, name):
         return self.dummy
 
     def dummy(self, *args, **kwargs):
         pass
 
-    def __repr__(self) -> str:
-        return "<PII DummyLogger>"
+    def __call__(self, *args, **kwargs):
+        pass
 
 
 class StdLogger:
