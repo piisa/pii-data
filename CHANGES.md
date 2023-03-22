@@ -1,5 +1,8 @@
 # Changelog
 
+## v. 0.3.2
+ * fix: Dummy logger class
+
 ## v. 0.3.1
  * fix: ensure loaded PiiCollection objects have integer ids for Detectors
  * fix: only add lang to PiiCollection header if defined
