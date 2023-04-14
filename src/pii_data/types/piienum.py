@@ -2,10 +2,10 @@
 Enumeration that contains all defined PII element types
 """
 
-from enum import Enum, auto
+from enum import IntEnum, auto
 
 
-class PiiEnum(str, Enum):
+class PiiEnum(IntEnum):
 
     CREDIT_CARD = auto()
     BANK_ACCOUNT = auto()
@@ -23,12 +23,15 @@ class PiiEnum(str, Enum):
     KEY = auto()                # a software key (e.g. SSH key or DB access key)
 
     PERSON = auto()             # a person name
-    AGE = auto()
+    LOCATION = auto()           # physical address
+    AGE = auto()                # person age
     DATE = auto()               # A PII-related date (eg birth date, death date)
     NORP = auto()               # Nationality or Religion or Political Group
-    MEDICAL = auto()            # Medical records
+    MEDICAL = auto()            # medical records
     ORG = auto()                # organization or institution
-    STREET_ADDRESS = auto()
 
     # Fallback type
     OTHER = auto()
+
+    # Old name
+    STREET_ADDRESS = LOCATION
