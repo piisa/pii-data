@@ -1,5 +1,15 @@
 # Changelog
 
+## v. 0.4.0
+ * PiiEnum base type changed to IntEnum
+ * PiiEnum.STREET_ADDRESS changed to PiiEnum.LOCATION, with STREET_ADDRESS
+   left as alias
+ * PiiCollection improvements:
+    - add_detectors() method
+    - to_json() method, to make it directly serializable by CustomJSONEncoder
+ * fix: PiiCollection clone should also clone the detector map
+ * fix: only create a JSON encoder in PiiCollection if needed
+
 ## v. 0.3.2
  * fix: Dummy logger class
 

@@ -22,7 +22,7 @@ class CustomJSONEncoder(json.JSONEncoder):
       - sets (as sorted lists)
       - iterators (as lists)
       - binary data as Base64 strings (or optionally skipped)
-      - any object having a to_json() or as_dict() method
+      - any object having a to_json() or asdict() method
 
     Any other non-serializable object is converted to its string representation
     """

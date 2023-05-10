@@ -5,7 +5,7 @@ A class to describe a list of detected PII entities
 from datetime import datetime, timezone
 import json
 
-from typing import TextIO, Dict, Iterator, TypeVar, Union
+from typing import TextIO, Dict, Iterator, TypeVar, Union, Iterable
 
 from ...defs import FMT_PIICOLLECTION
 from ...helper.json_encoder import CustomJSONEncoder
@@ -77,9 +77,10 @@ class PiiCollection:
         """
         df = piic.defaults
         new_piic = cls(df.get("lang"), df.get("docid"))
-        new_piic._header = piic.get_header(False)
         new_piic.detectors = {k: PiiDetector(**v)
                               for k, v in piic.get_detectors().items()}
+        new_piic._detector_map = {d._id: d for d in new_piic.detectors.values()}
+        new_piic._header = piic.get_header(False)
         return new_piic
 
 
@@ -90,20 +91,20 @@ class PiiCollection:
          :param docid: default document that entities in the collection will
            refer to
         """
-        # Default values
+        # Define default values
         self.defaults = {}
         if lang:
             self.defaults['lang'] = lang
         if docid:
             self.defaults['docid'] = docid
 
-        # An encoder for generating NDJSON output
-        self._encoder = CustomJSONEncoder(ensure_ascii=False)
-
-        # Data contained in the object
-        self._detector_map = {}
-        self.detectors = {}
+        # Initialize the data container for the object
         self.pii = []
+        self.detectors = {}
+        self._detector_map = {}
+
+        # Prepare a possible encoder object for generating NDJSON output
+        self._encoder = None
 
         # Initialize the collection header
         hdr = {
@@ -119,26 +120,6 @@ class PiiCollection:
         self._header = header
 
 
-    def get_detectors(self, asdict: bool = True) -> TYPE_DET_ALL:
-        """
-        Return the detectors from this collection, as a dictionary indexed
-        by detector index
-         :param asdict: return detectors as dictionaries (else as PiiDetector
-            objects)
-        """
-        if not asdict:
-            return self.detectors
-        else:
-            return {k: v.asdict() for k, v in self.detectors.items()}
-
-
-    def get_detector(self, idx: int) -> PiiDetector:
-        """
-        Return a detector from this collection, given its detector index
-        """
-        return self.detectors[idx]
-
-
     def get_header(self, detectors: bool = True) -> Dict:
         """
         Return the header of the collection object, including the detectors
@@ -150,6 +131,50 @@ class PiiCollection:
 
     # Old name
     header = get_header
+
+
+    def get_detector(self, idx: int) -> PiiDetector:
+        """
+        Return a detector from this collection, given its detector index
+        """
+        return self.detectors[idx]
+
+
+    def get_detectors(self, asdict: bool = True) -> TYPE_DET_ALL:
+        """
+        Return the detectors from this collection, as a dictionary indexed
+        by detector index
+         :param asdict: return detectors as dictionaries (else they will be
+            returned as PiiDetector objects)
+        """
+        if not asdict:
+            return self.detectors
+        else:
+            return {k: v.asdict() for k, v in self.detectors.items()}
+
+
+    def add_detector(self, detector: PiiDetector) -> str:
+        """
+        Add a new detector to the object (if not there yet).
+         :return: the detector index
+        """
+        if detector._id not in self._detector_map:
+            num = len(self.detectors) + 1
+            self.detectors[num] = detector
+            self._detector_map[detector._id] = num
+        self.stage('detection')
+        return self._detector_map[detector._id]
+
+
+    def add_detectors(self, detectors: Iterable[PiiDetector]) -> int:
+        """
+        Add all a number of detectors to the object (if not there yet).
+         :return: the number of added detectors
+        """
+        num = len(self.detectors)
+        for det in detectors:
+            self.add_detector(det)
+        return len(self.detectors) - num
 
 
     def stage(self, value: str = None) -> str:
@@ -174,19 +199,6 @@ class PiiCollection:
         Return an iterator over the PII instances in the object
         """
         return iter(self.pii)
-
-
-    def add_detector(self, detector: PiiDetector) -> str:
-        """
-        Add a new detector to the header (if not there yet).
-        Returns the detector index
-        """
-        if detector._id not in self._detector_map:
-            num = len(self.detectors) + 1
-            self.detectors[num] = detector
-            self._detector_map[detector._id] = num
-        self.stage('detection')
-        return self._detector_map[detector._id]
 
 
     def add(self, entity: PiiEntity, detector: PiiDetector = None):
@@ -217,6 +229,14 @@ class PiiCollection:
         self.stage("decision")
 
 
+    def to_json(self) -> Dict:
+        """
+        Return a dictionary that is JSON-serializable (when using the
+        CustomJSONEncoder class)
+        """
+        return {"metadata": self.get_header(), "pii_list": self.pii}
+
+
     def dump(self, out: TextIO, format: str = 'ndjson', **kwargs):
         """
         Dump the collection to an output destination
@@ -225,20 +245,21 @@ class PiiCollection:
         For `json` format, all passed additional arguments will be added to
         the JSON serializer
         """
-        header = self.get_header()
 
         if format in ("ndjson", "jsonl"):
 
+            if self._encoder is None:
+                self._encoder = CustomJSONEncoder(ensure_ascii=False)
+            header = self.get_header()
             print(self._encoder.encode(header), file=out)
             for pii in self.pii:
                 print(self._encoder.encode(pii), file=out)
 
         elif format == "json":
 
-            data = {"metadata": header, "pii_list": self.pii}
             if "indent" not in kwargs:
                 kwargs["indent"] = 2
-            json.dump(data, out, cls=CustomJSONEncoder, ensure_ascii=False,
+            json.dump(self, out, cls=CustomJSONEncoder, ensure_ascii=False,
                       **kwargs)
 
         else:
