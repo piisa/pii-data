@@ -34,7 +34,11 @@ And it can also contain the following optional fields:
  * `docid`: an identifier for the document the PII belongs to
  * `detector`: the index of the detector that generated the PII
  * `process`: information about the processing stage (if it exists, this is
-   itself a dictionary, with fields like `stage` or `action`)
+   itself a dictionary, with fields like `stage` or `action` informing about
+   the current stage, plus a `history` field holding information about
+   previous stages)
+ * `extra`: a field holding an additional dictionary to store arbitrary
+   properties
 
 Note that the PiiEntity object contains no information about the end span of
 the entity value. Instead, this can be computed by adding the _length_ of the

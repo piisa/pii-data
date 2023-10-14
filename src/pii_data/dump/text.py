@@ -12,7 +12,7 @@ def _dump_chunk(chunk: Dict, out: TextIO, level: int, indent: int):
     """
     Dump a document chunk as raw text lines, possibly with leading indent
     """
-    for line in chunk["data"].splitlines():
+    for line in chunk.get("data", "").splitlines():
         print(" " * (level-1)*indent, line, sep="", file=out)
     for subchunk in chunk.get("chunks", []):
         _dump_chunk(subchunk, out, level+1, indent)

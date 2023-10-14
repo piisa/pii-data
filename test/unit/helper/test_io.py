@@ -9,6 +9,7 @@ import gzip
 import bz2
 import lzma
 import io
+import json
 
 import pytest
 from unittest.mock import Mock
@@ -171,3 +172,22 @@ def test340_openuri_compressed(ext, monkeypatch):
 
     assert exp == got
     assert buf.call_args[0] == (name,)
+
+
+def test400_yaml():
+    """Test read_yaml, dump_yaml"""
+
+
+    with mod.openfile(EXAMPLE,) as f:
+        data1 = json.load(f)
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".yml", delete=False) as f:
+            f.close()
+            mod.dump_yaml(data1, f.name)
+            data2 = mod.load_yaml(f.name)
+    finally:
+        unlink(f.name)
+        #print(f.name)
+
+    assert data1 == data2

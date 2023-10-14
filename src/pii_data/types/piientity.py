@@ -34,8 +34,12 @@ class PiiEntityInfo:
 
 # --------------------------------------------------------------------------
 
-# Additional variable fields in a PII instance
-EXTRA_FIELDS = "docid", "detector", "process"
+# Optional fields in the PII instance, in addition to type, value & chunkid
+# - docid: id for the document the PII belongs to
+# - detector: detector that was used to extract it
+# - process: current processing stage the PII is in
+# - extra: any other additional information to supply (typically a dict)
+FIELDS_OPTIONAL = "docid", "detector", "process", "extra"
 
 TYPE_PTYPE = Union[PiiEnum, str]
 
@@ -65,7 +69,7 @@ class PiiEntity:
           :param country: country associated with the PII
           :param subtype: PII subtype
         Additional optional arguments for the fields attribute are as given
-        by EXTRA_FIELDS
+        by FIELDS_OPTIONAL
         """
         # Define type
         if not isinstance(ptype, PiiEnum):
@@ -86,7 +90,7 @@ class PiiEntity:
           :param value: the extracted PII string
           :param chunk: the id for the chunk the PII is in
           :param pos: position of the PII in the chunk
-        Additional optional arguments are as given by EXTRA_FIELDS
+        Additional optional arguments are as given by FIELDS_OPTIONAL
         """
         # Compulsory arguments
         if not isinstance(info, PiiEntityInfo):
@@ -95,7 +99,7 @@ class PiiEntity:
         self.fields = {'type': info.pii.name, 'value': value, 'chunkid': chunk}
         self.pos = pos
         # Other arguments
-        for k in EXTRA_FIELDS:
+        for k in FIELDS_OPTIONAL:
             v = kwargs.get(k)
             if v is not None:
                 self.fields[k] = v
@@ -128,6 +132,18 @@ class PiiEntity:
         self.fields[name] = value
 
 
+    def add_process_stage(self, stage: str, **data):
+        """
+        Add a stage to the entity processing history
+        """
+        if "process" not in self.fields:
+            self.fields["process"] = {"stage": stage, **data}
+            return
+        history = self.fields["process"].pop("history", [])
+        history.append(self.fields["process"])
+        self.fields["process"] = {"stage": stage, **data, "history": history}
+
+
     def asdict(self) -> Dict:
         """
         Return the object data as a dict that can then be serialised as JSON
@@ -151,6 +167,6 @@ class PiiEntity:
             raise InvArgException("missing field in PiiEntity dict: {}", e)
 
         # Create
-        fields = "lang", "country", "subtype", *EXTRA_FIELDS
+        fields = "lang", "country", "subtype", *FIELDS_OPTIONAL
         extra = dict(t for t in map(lambda k: (k, src.get(k)), fields) if t[1])
         return cls.build(ptype, value, chunkid, pos, **filter_dict(extra))

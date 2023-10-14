@@ -146,6 +146,67 @@ def test220_object_extra():
     assert obj.asdict() == exp
 
 
+def test230_process_field():
+    """Test the process field"""
+    info = mod.PiiEntityInfo(PiiEnum.GOV_ID, "en", "us", "SSN")
+    obj = mod.PiiEntity(info, "12345678", "12", 10,
+                        process={"stage": "detect", "score": 0.8},
+                        docid="id1", detector="3")
+
+    obj.add_process_stage("decide", action="remove")
+
+    exp = {
+        'type': 'GOV_ID',
+        'chunkid': '12',
+        'end': 18,
+        'start': 10,
+        'value': '12345678',
+        'country': 'us',
+        'lang': 'en',
+        'subtype': 'SSN',
+        "process": {
+            "stage": "decide",
+            "action": "remove",
+            "history": [
+                {"stage": "detect", "score": 0.8}
+            ]
+        },
+        "docid": "id1",
+        "detector": "3"
+    }
+    assert obj.asdict() == exp
+
+
+def test231_process_field():
+    """Test the process field"""
+    info = mod.PiiEntityInfo(PiiEnum.GOV_ID, "en", "us", "SSN")
+    obj = mod.PiiEntity(info, "12345678", "12", 10, docid="id1", detector="3")
+
+    obj.add_process_stage("detect", score=0.8)
+    obj.add_process_stage("decide", action="remove")
+
+    exp = {
+        'type': 'GOV_ID',
+        'chunkid': '12',
+        'end': 18,
+        'start': 10,
+        'value': '12345678',
+        'country': 'us',
+        'lang': 'en',
+        'subtype': 'SSN',
+        "process": {
+            "stage": "decide",
+            "action": "remove",
+            "history": [
+                {"stage": "detect", "score": 0.8}
+            ]
+        },
+        "docid": "id1",
+        "detector": "3"
+    }
+    assert obj.asdict() == exp
+
+
 def test300_from_dict():
     """Test object from dict"""
     pii = {'type': 'CREDIT_CARD',

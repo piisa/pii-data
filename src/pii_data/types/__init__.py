@@ -1,3 +1,3 @@
-from .piienum import PiiEnum
-from .piientity import PiiEntityInfo, PiiEntity
-from .piicollection import PiiDetector, PiiCollection, PiiCollectionLoader
+from .piienum import PiiEnum    # noqa: F401
+from .piientity import PiiEntityInfo, PiiEntity    # noqa: F401
+from .piicollection import PiiDetector, PiiCollection, PiiCollectionLoader    # noqa: F401

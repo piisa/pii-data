@@ -1,16 +1,19 @@
 """
-A simple exception hierarchy:
+An exception hierarchy for PIISA applications
 
   PiiDataException
     |
     |-> InvArgException
+    |-> BuildException
+    |     |-> ConfigException
+    |     |-> MissingDependency
+    |     |-> UnimplementedException
+    |
     |-> ProcException
     |     |
     |     |-> InvalidDocument
-    |     |-> ConfigException
     |     |-> FileException
     |
-    |-> UnimplementedException
 
 """
 
@@ -32,6 +35,34 @@ class InvArgException(PiiDataException):
     pass
 
 
+class BuildException(PiiDataException):
+    """
+    A problem while building objects
+    """
+    pass
+
+
+class ConfigException(BuildException):
+    """
+    A problem with a configuration
+    """
+    pass
+
+
+class MissingDependency(BuildException):
+    """
+    A package dependency that is not satisfied
+    """
+    pass
+
+
+class UnimplementedException(BuildException):
+    """
+    Unimplemented methods/functions
+    """
+    pass
+
+
 class ProcException(PiiDataException):
     """
     A processing exception
@@ -46,22 +77,8 @@ class InvalidDocument(ProcException):
     pass
 
 
-class ConfigException(ProcException):
-    """
-    A problem with a configuration
-    """
-    pass
-
-
 class FileException(ProcException):
     """
     A problem with a file
-    """
-    pass
-
-
-class UnimplementedException(PiiDataException):
-    """
-    Unimplemented methods/functions
     """
     pass
