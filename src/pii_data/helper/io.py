@@ -16,9 +16,10 @@ import bz2
 import lzma
 import json
 
-from yaml import load as yaml_load, SafeLoader as YamlLoader, YAMLError
+from yaml import (load as _yaml_load, SafeLoader as YamlLoader, YAMLError,
+                  dump as _yaml_dump, SafeDumper as YamlDumper)
 
-from typing import Dict, Callable, IO
+from typing import Dict, Callable, IO, Union, List
 
 from .exception import InvArgException, FileException
 
@@ -129,13 +130,13 @@ def openuri(name: str, mode: str = 'rt', encoding: str = None,
     return openfile(src, mode, encoding)
 
 
-def load_yaml(filename: str) -> Dict:
+def load_yaml(filename: str) -> Union[Dict, List]:
     """
     Load a YAML file
     """
     with openfile(filename) as f:
         try:
-            return yaml_load(f, Loader=YamlLoader)
+            return _yaml_load(f, Loader=YamlLoader)
         except YAMLError as e:
             raise FileException("read error in YAML file '{}': {}",
                                 filename, e) from e
@@ -160,4 +161,21 @@ def load_datafile(filename: str) -> Dict:
         return load_yaml(filename)
 
     else:
-        raise InvArgException('cannot load "{}": unsupported format')
+
+        raise InvArgException('cannot load "{}": unsupported format', filename)
+
+
+
+def dump_yaml(data: Union[Dict, List], filename: str):
+    """
+    Write a data structure as a YAML file
+    """
+    try:
+        dump = _yaml_dump(data, Dumper=YamlDumper, sort_keys=False,
+                          allow_unicode=True)
+    except YAMLError as e:
+        raise FileException("write error while serializing to YAML '{}': {}",
+                            filename, e) from e
+
+    with openfile(filename, "wt", encoding="utf-8") as f:
+        f.write(dump)

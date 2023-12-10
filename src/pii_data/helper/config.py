@@ -152,7 +152,7 @@ def load_config(configlist: TYPE_CONFIG_LIST,
         try:
             data = read_config_file(f, formats)
             config_data.append(data)
-        except ProcException:
+        except (ProcException, ConfigException):
             raise
         except Exception as e:
             raise ConfigException("cannot process config '{}': {}", f, e) from e

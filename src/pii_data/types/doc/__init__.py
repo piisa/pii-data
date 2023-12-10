@@ -1,4 +1,4 @@
-from .chunker import DocumentChunk
+from .chunker import DocumentChunk    # noqa: F401
 from .document import SrcDocument, \
-    TableSrcDocument, TreeSrcDocument, SequenceSrcDocument
-from .localdoc import LocalSrcDocument, LocalSrcDocumentFile
+    TableSrcDocument, TreeSrcDocument, SequenceSrcDocument    # noqa: F401
+from .localdoc import LocalSrcDocument, LocalSrcDocumentFile  # noqa: F401

@@ -1,5 +1,14 @@
 # Changelog
 
+## v. 0.5.0
+ * added "extra" field to PiiEntity
+ * added add_process_stage() method to PiiEntity
+ * added chunks() method to PiiChunkIterator
+ * added dump_yaml() function
+ * fixed exception hierarchy
+ * fix: error message when opening file
+ * fix: in text dump protect against chunk with no text
+
 ## v. 0.4.0
  * PiiEnum base type changed to IntEnum
  * PiiEnum.STREET_ADDRESS changed to PiiEnum.LOCATION, with STREET_ADDRESS
