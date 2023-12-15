@@ -3,7 +3,7 @@ Loading PIISA configuration files
 
 A configuration file is either:
  * a _module_ config file, carrying configuration for one PIISA module
- * a _full_ config fille, carrying configuration for all (or many) PIISA
+ * a _full_ config file, carrying configuration for all (or many) PIISA
    modules from different packages
 """
 
@@ -17,12 +17,12 @@ from .exception import ConfigException, ProcException
 from .io import load_datafile
 
 
-TYPE_CONFIG = Union[Dict, str]
+TYPE_CONFIG = Union[Dict, str, Path]
 TYPE_CONFIG_LIST = Union[TYPE_CONFIG, List[TYPE_CONFIG]]
 
 
 def config_section(data: Dict, formats: Set[str],
-                   filename: str) -> Optional[Tuple[str, Dict]]:
+                   filename: Union[str, Path]) -> Optional[Tuple[str, Dict]]:
     """
     Parse one config section (i.e. the config for a module)
     """
@@ -54,7 +54,7 @@ def config_section(data: Dict, formats: Set[str],
 
 
 
-def read_config_file(filename: str,
+def read_config_file(filename: Union[str, Path],
                      formats: List[str] = None) -> Dict:
     """
     Read a single configuration file (JSON or YAML)
@@ -121,8 +121,8 @@ def load_config(configlist: TYPE_CONFIG_LIST,
                 formats: List[str] = None) -> Dict:
     """
     Load & combine PIISA configuration files
-      :param filename: config filename(s) to load, or already loaded config
-         dictionaries
+      :param configlist: list of config filename(s) to load, or already loaded
+         config dictionaries
       :param formats: restrict the formats to load (a "full" format
          is always read, and the valid module sections in it retained)
       :return: a single dictionary with the config data, indexed by config

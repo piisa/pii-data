@@ -1,5 +1,8 @@
 # Changelog
 
+## v. 0.5.1
+ * fix: rawdoc script
+
 ## v. 0.5.0
  * added "extra" field to PiiEntity
  * added add_process_stage() method to PiiEntity

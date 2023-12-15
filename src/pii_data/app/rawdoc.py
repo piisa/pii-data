@@ -4,7 +4,7 @@ Simple script to convert a YAML Source Document to raw text
 
 from argparse import ArgumentParser, Namespace
 
-from ..types.localdoc import LocalSrcDocumentFile
+from ..types.doc.localdoc import LocalSrcDocumentFile
 
 
 # --------------------------------------------------------------------------

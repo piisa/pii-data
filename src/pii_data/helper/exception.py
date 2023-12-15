@@ -13,6 +13,7 @@ An exception hierarchy for PIISA applications
     |     |
     |     |-> InvalidDocument
     |     |-> FileException
+    |     |-> NetworkException
     |
 
 """
