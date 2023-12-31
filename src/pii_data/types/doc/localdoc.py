@@ -108,7 +108,7 @@ class SequenceLocalSrcDocument(BaseLocalSrcDocument, SequenceSrcDocument):
         """
         Add a chunk to the sequence document
         """
-        self._chk.append(chunk.as_dict())
+        self._chk.append(chunk.asdict())
 
 
 class TreeLocalSrcDocument(BaseLocalSrcDocument, TreeSrcDocument):
@@ -123,7 +123,7 @@ class TreeLocalSrcDocument(BaseLocalSrcDocument, TreeSrcDocument):
         if new_lev > cur_lev + 1:
             raise InvArgException("level gap in document tree for chunk: {}",
                                   chunk.id)
-        chunk = chunk.as_dict()
+        chunk = chunk.asdict()
         if new_lev == 0:
             self._chk.append(chunk)
             self._stack = [chunk]

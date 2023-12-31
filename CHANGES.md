@@ -1,5 +1,10 @@
 # Changelog
 
+## v. 0.5.1
+ * DocumentChunk method renamed as_dict() => asdict() for consistency
+   (with an alias to the old name for backwards compatibility)
+ * improved error handling of invalid config files
+
 ## v. 0.5.0
  * added "extra" field to PiiEntity
  * added add_process_stage() method to PiiEntity

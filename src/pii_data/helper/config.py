@@ -1,10 +1,14 @@
 """
-Loading PIISA configuration files
+Loading PIISA configurations
 
-A configuration file is either:
- * a _module_ config file, carrying configuration for one PIISA module
- * a _full_ config fille, carrying configuration for all (or many) PIISA
+A PIISA configuration is either:
+ * a _module_ config, carrying configuration for one PIISA module
+ * a _full_ config, carrying configuration for all (or many) PIISA
    modules from different packages
+
+Configurations can be
+ * located in files, in either JSON or YAML formats
+ * constructed dynamically, as Python dicts
 """
 
 from collections import defaultdict
@@ -94,13 +98,12 @@ def merge_config(configdata: Iterable[Dict]) -> Dict:
     lists).
     """
     out_config = defaultdict(lambda: defaultdict(dict))
-    for sourcedata in configdata:
-
+    for n, sourcedata in enumerate(configdata, start=1):
 
         for section, config in sourcedata.items():
             dest = out_config[section]
-            for k, v in config.items():
-                try:
+            try:
+                for k, v in config.items():
                     if k not in dest:
                         dest[k] = v
                     elif isinstance(v, dict):
@@ -111,9 +114,10 @@ def merge_config(configdata: Iterable[Dict]) -> Dict:
                         dest[k] = [dest[k], v] if isinstance(dest[k], str) else dest[k] + [v]
                     else:
                         dest[k] = v
-                except Exception as e:
-                    raise ConfigException("cannot merge config '{}': {}",
-                                          config.get("name"), e) from e
+            except Exception as e:
+                name = config.get("name") if hasattr(config, "get") else ""
+                raise ConfigException("cannot merge config {} name={} section={}: {}",
+                                      n, name, section, e) from e
     return out_config
 
 
@@ -166,7 +170,7 @@ def load_single_config(base: Union[str, Path], format: str,
     """
     Read the configuration for a single module
      :param base: filename containing a base (default) configuration
-     :param format: config section to read
+     :param format: single config section to read
      :param configlist: optional list of additional configurations to add
      :return: the module config
     """

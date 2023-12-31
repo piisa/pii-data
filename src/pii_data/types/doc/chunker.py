@@ -31,11 +31,18 @@ class DocumentChunk:
         return (self.id, self.data, self.context) == \
             (other.id, other.data, other.context)
 
-    def as_dict(self, context: bool = True) -> Dict:
+    def asdict(self, context: bool = True) -> Dict:
+        """
+        Return the object contents as a dictionary
+          :param context: add the chunk context to the dict
+        """
         chunk = {"id": self.id, "data": self.data}
         if context and self.context:
             chunk["context"] = self.context
         return chunk
+
+    # backwards compatibility
+    as_dict = asdict
 
 
 

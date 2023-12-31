@@ -162,7 +162,7 @@ def load_datafile(filename: str) -> Dict:
 
     else:
 
-        raise InvArgException('cannot load "{}": unsupported format', filename)
+        raise InvArgException('cannot load "{}": unsupported format (valid formats: json, yaml)', filename)
 
 
 

@@ -5,9 +5,6 @@ Test recreating a document in the LocalSrcDocument class
 from pathlib import Path
 import tempfile
 
-from unittest.mock import Mock
-import pytest
-
 from typing import Dict
 
 from pii_data.helper.io import load_yaml

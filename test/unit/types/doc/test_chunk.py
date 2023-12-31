@@ -36,12 +36,12 @@ def test120_chunk_eq():
 
 
 def test120_chunk_dict():
-    """Test chunk as_dict"""
+    """Test chunk asdict"""
     obj1 = mod.DocumentChunk(1, "an example")
     obj2 = mod.DocumentChunk(1, "an example", {"after": 44})
 
-    assert {"id": '1', "data": "an example"} == obj1.as_dict()
-    assert {"id": '1', "data": "an example", "context": {"after": 44}} == obj2.as_dict()
+    assert {"id": '1', "data": "an example"} == obj1.asdict()
+    assert {"id": '1', "data": "an example", "context": {"after": 44}} == obj2.asdict()
 
 
 # ----------------------------------------------------------------
