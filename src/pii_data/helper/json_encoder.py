@@ -6,7 +6,7 @@ import sys
 import datetime
 import json
 import base64
-from collections.abc import Iterator
+from collections.abc import Iterator, Iterable
 
 
 from typing import Union
@@ -50,7 +50,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.to_json()
         elif hasattr(obj, 'asdict'):
             return obj.asdict()
-        elif isinstance(obj, Iterator):
+        elif isinstance(obj, (Iterator, Iterable)):
             return list(obj)
         elif isinstance(obj, (bytes, bytearray)):
             size = len(obj)

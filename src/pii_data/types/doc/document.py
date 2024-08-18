@@ -13,9 +13,11 @@ from typing import Dict, Iterable, Callable, Iterator
 
 from ...helper.exception import UnimplementedException
 from .defs import META_DOC
-from .chunker import DocumentChunk, ChunkGenerator, ContextChunkGenerator
+from .chunker import DocumentChunk, ChunkGenerator, \
+    TableCtxChunkGenerator, SeqCtxChunkGenerator
 
 TYPE_META = Dict[str, Dict]
+
 
 class SrcDocument:
     """
@@ -94,7 +96,7 @@ class SrcDocument:
          :param context: add additional context information to each chunk (if
            not None, this modifies the option passed in the object constructor)
          :param chunk_iterator: the function providing base chunks. If not
-           passed, the iter_flat() method will be used.
+           passed, the iter_struct() method will be used.
         """
 
         if chunk_iterator is None:
@@ -102,7 +104,9 @@ class SrcDocument:
 
         # Create the chunker object
         do_context = context if context is not None else self._iter_options.get("context", False)
-        cls = ContextChunkGenerator if do_context else ChunkGenerator
+        cls = ChunkGenerator if not do_context else \
+            TableCtxChunkGenerator if isinstance(self, TableSrcDocument) else \
+            SeqCtxChunkGenerator
         chunker = cls(meta=self._meta)
 
         # Iterate over the document elements and build a chunk for each one
@@ -138,10 +142,10 @@ class SrcDocument:
     def iter_base(self) -> Iterator[Dict]:
         """
         The base iteration method to be implemented by subclasses. When executed
-        it should return a sequence of chunks. Each chunk can be:
+        it should return a sequence of elements. Each element can be:
           * a dictionary-like object, containing at least a "data" field, and
             (optionally) an "id" field
-          * a chunk payload (any data structure, except the one above)
+          * a payload (any data structure, except the one above)
         """
         raise UnimplementedException("abstract document class: missing iter_base() method")
 
@@ -217,16 +221,24 @@ class TableSrcDocument(SrcDocument):
     A table document, as an abstract class.
     """
 
-    def _iter_cells(self) -> Iterable[Dict]:
+    def _iter_cells(self) -> Iterator[Dict]:
         """
         Return all cells from the document tree in a sequence, traversing it
-        in row-major order
+        in row-major order. Asssign to each cell a dict with:
+          - an identifier, built from row and column
+          - a data value (cell contents)
+          - a context, with "column" and "row" fields
         """
         header = self.metadata
         colnames = header.get("column", {}).get("name")
+
+        # The iter_base() method in Table documents should produce rows,
+        # which are dict-like objects with "id" and "data" attribs
         for r, row in enumerate(self.iter_base(), start=1):
             rowdata = row.get("data", [])
             rowid = row.get("id", r)
+
+            # And the "data" attribute in a row should be an iterator for cells
             for c, cell in enumerate(rowdata, start=1):
                 data = {
                     "id": f"{rowid}.{c}",
@@ -241,10 +253,12 @@ class TableSrcDocument(SrcDocument):
                 yield data
 
 
-    def iter_full(self, context: bool = None) -> Iterable[Dict]:
+    def iter_full(self, context: bool = None,
+                  chunk_iterator: Iterable = None) -> Iterable[Dict]:
         """
-        Iterate over the document, producing a sequence of DocumentChunk
-        objects
+        Iterate over all cells of the document, producing a sequence of
+        DocumentChunk objects
         """
-        return super().iter_full(context=context,
-                                 chunk_iterator=self._iter_cells)
+        if chunk_iterator is None:
+            chunk_iterator = self._iter_cells
+        return super().iter_full(context=context, chunk_iterator=chunk_iterator)

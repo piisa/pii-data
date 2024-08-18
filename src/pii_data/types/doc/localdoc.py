@@ -42,7 +42,7 @@ class BaseLocalSrcDocument(SrcDocument):
         super().__init__(iter_options=iter_options, metadata=metadata)
         # Add document chunks
         self.set_chunks(chunks)
-        # Find the docuemnt type and add it to the header
+        # Find the document type and add it to the header
         dtype = DOC_TYPES.get(self.__class__.__name__)
         if dtype:
             self.add_metadata(document={"type": dtype})
@@ -67,7 +67,7 @@ class BaseLocalSrcDocument(SrcDocument):
         """
         Set the document chunks
          :param chunks: an iterable producing either plain strings, or
-            dictionaries (which contain at least a `data` field)
+            dictionaries (each of which contains at least a `data` field)
         """
         self._chk = chunks if chunks else []
 
@@ -76,7 +76,7 @@ class BaseLocalSrcDocument(SrcDocument):
         """
         Get an iterable over the document chunks
         """
-        #import json; print("LOCAL CHUNKS", json.dumps(self._chk, indent=2))
+        #import json; print("LOCALCHUNKS", json.dumps(list(self._chk), indent=2))
         return iter(self._chk)
 
 
@@ -108,7 +108,7 @@ class SequenceLocalSrcDocument(BaseLocalSrcDocument, SequenceSrcDocument):
         """
         Add a chunk to the sequence document
         """
-        self._chk.append(chunk.as_dict())
+        self._chk.append(chunk.asdict())
 
 
 class TreeLocalSrcDocument(BaseLocalSrcDocument, TreeSrcDocument):
@@ -123,7 +123,7 @@ class TreeLocalSrcDocument(BaseLocalSrcDocument, TreeSrcDocument):
         if new_lev > cur_lev + 1:
             raise InvArgException("level gap in document tree for chunk: {}",
                                   chunk.id)
-        chunk = chunk.as_dict()
+        chunk = chunk.asdict()
         if new_lev == 0:
             self._chk.append(chunk)
             self._stack = [chunk]
@@ -206,6 +206,9 @@ def dump_file(doc: SrcDocument, outname: str,
     else:
         raise InvArgException("unspecified format for: {}", outname)
 
+    if isinstance(context_fields, str):
+        context_fields = [context_fields]
+
     if format in ("yaml", "yml"):
         dump_yaml(doc, outname, context_fields=context_fields)
     elif format == "json":
@@ -215,6 +218,47 @@ def dump_file(doc: SrcDocument, outname: str,
         dump_text(doc, outname, indent=indent)
     else:
         raise InvArgException("unsupported output format: {}", format)
+
+# --------------------------------------------------------------------------
+
+
+def check_document_format(data: Dict):
+    """
+    Check document format
+    """
+    if "format" not in data:
+        raise InvalidDocument("missing format indicator",)
+    fmt = data.get("format")
+    if fmt != FMT_SRCDOCUMENT:
+        raise InvalidDocument(f"invalid format {fmt}")
+
+
+def create_document_object(data: Dict,
+                           iter_options: Dict = None) -> BaseLocalSrcDocument:
+    """
+    Create an object document from a data structure
+     :param data: full pathname of the document to load
+     :param iter_options: iteration options for the document
+     :return: a LocalSrcDocument subclass
+    """
+
+    # Fetch the document header & get document type
+    hdr = data.get("header", {})
+    dtype = hdr.get("document", {}).get("type")
+
+    # Select the proper object type to create
+    if dtype == "tree":
+        Obj = TreeLocalSrcDocument
+    elif dtype == "table":
+        Obj = TableLocalSrcDocument
+    elif dtype == "sequence" or type is None:
+        Obj = SequenceLocalSrcDocument
+    else:
+        raise InvalidDocument(f"unknown document type '{dtype}'")
+
+    # Create object
+    return Obj(chunks=data.get("chunks"), metadata=hdr,
+               iter_options=iter_options)
 
 
 def load_file(filename: str, iter_options: Dict = None,
@@ -228,43 +272,21 @@ def load_file(filename: str, iter_options: Dict = None,
     """
     data = load_datafile(filename)
 
-    # Check format
-    if "format" not in data:
-        raise InvalidDocument("Error: missing format indicator in {}", filename)
-    fmt = data.get("format")
-    if fmt != FMT_SRCDOCUMENT:
-        raise InvalidDocument(f"Error: invalid format {fmt} in {filename}")
+    try:
+        check_document_format(data)
+        obj = create_document_object(data, iter_options)
+    except InvalidDocument as e:
+        raise InvalidDocument("Error {}: {}", e, filename) from e
 
-    # Fetch the document header & get document type
-    hdr = data.get("header", {})
-    dtype = hdr.get("document", {}).get("type")
+    if metadata:
+        obj.add_metadata(**metadata)
 
-    # Update header with additional metadata, if passed
-    if metadata is not None:
-        for name, d in metadata.items():
-            if name not in hdr:
-                hdr[name] = d
-            else:
-                hdr[name].update(d)
-
-    # Select the proper object type to create
-    if dtype == "tree":
-        Obj = TreeLocalSrcDocument
-    elif dtype == "table":
-        Obj = TableLocalSrcDocument
-    elif dtype == "sequence" or type is None:
-        Obj = SequenceLocalSrcDocument
-    else:
-        raise InvalidDocument(f"Unknown document type '{dtype}' in {filename}")
-
-    # Create object
-    return Obj(chunks=data.get("chunks"), metadata=hdr,
-               iter_options=iter_options)
+    return obj
 
 
 class LocalSrcDocumentFile:
     """
-    A dispatcher class that loads a SrcDocument stored in a local YAML file
+    A dispatcher class that loads a SrcDocument stored in a local YAML or JSON file
     """
 
     def __new__(self, filename: str, iter_options: Dict = None,

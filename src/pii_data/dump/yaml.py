@@ -3,14 +3,14 @@ Dump documents to YAML
 """
 
 from collections import defaultdict
-from types import MappingProxyType
+from types import MappingProxyType, GeneratorType
 
 from yaml import dump
 from yaml import SafeDumper
 from yaml.representer import SafeRepresenter
 #from yaml.nodes import MappingNode
 
-from typing import Iterable, List, Dict
+from typing import List, Dict, Iterable
 
 from ..defs import FMT_SRCDOCUMENT
 from ..helper.io import openfile
@@ -30,7 +30,7 @@ def text_representer(dumper, data):
 
 class ChunkWrapperRepresenter:
     """
-    A YAML representer for a ChunkWrapper (an iterator of dict-based chunks)
+    A YAML representer for a ChunkItemWrapper (an iterator of dict-based chunks)
     """
 
     def __init__(self, context_fields: List[str] = None):
@@ -85,10 +85,12 @@ def dump_yaml(doc: SrcDocument, outputfile: str,
     mydumper = SafeDumper
 
     # Add representers for some Python types
-    mydumper.add_representer(MappingProxyType, SafeRepresenter.represent_dict)
     mydumper.add_representer(defaultdict, SafeRepresenter.represent_dict)
+    mydumper.add_multi_representer(GeneratorType, SafeRepresenter.represent_list)
+    mydumper.add_multi_representer(MappingProxyType,
+                                   SafeRepresenter.represent_dict)
 
-    # Add representers for some Custom types
+    # Add representers for some custom types
     mydumper.add_representer(TextNode, text_representer)
     mydumper.add_representer(ChunkIterWrapper,
                              ChunkWrapperRepresenter(context_fields))

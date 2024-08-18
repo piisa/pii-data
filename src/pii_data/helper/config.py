@@ -1,10 +1,14 @@
 """
-Loading PIISA configuration files
+Loading PIISA configurations
 
-A configuration file is either:
+A PIISA configuration file is either:
  * a _module_ config file, carrying configuration for one PIISA module
- * a _full_ config fille, carrying configuration for all (or many) PIISA
+ * a _full_ config file, carrying configuration for all (or many) PIISA
    modules from different packages
+
+Configurations can be
+ * located in files, in either JSON or YAML formats
+ * constructed dynamically, as Python dicts
 """
 
 from collections import defaultdict
@@ -17,12 +21,12 @@ from .exception import ConfigException, ProcException
 from .io import load_datafile
 
 
-TYPE_CONFIG = Union[Dict, str]
+TYPE_CONFIG = Union[Dict, str, Path]
 TYPE_CONFIG_LIST = Union[TYPE_CONFIG, List[TYPE_CONFIG]]
 
 
 def config_section(data: Dict, formats: Set[str],
-                   filename: str) -> Optional[Tuple[str, Dict]]:
+                   filename: Union[str, Path]) -> Optional[Tuple[str, Dict]]:
     """
     Parse one config section (i.e. the config for a module)
     """
@@ -54,7 +58,7 @@ def config_section(data: Dict, formats: Set[str],
 
 
 
-def read_config_file(filename: str,
+def read_config_file(filename: Union[str, Path],
                      formats: List[str] = None) -> Dict:
     """
     Read a single configuration file (JSON or YAML)
@@ -94,13 +98,12 @@ def merge_config(configdata: Iterable[Dict]) -> Dict:
     lists).
     """
     out_config = defaultdict(lambda: defaultdict(dict))
-    for sourcedata in configdata:
-
+    for n, sourcedata in enumerate(configdata, start=1):
 
         for section, config in sourcedata.items():
             dest = out_config[section]
-            for k, v in config.items():
-                try:
+            try:
+                for k, v in config.items():
                     if k not in dest:
                         dest[k] = v
                     elif isinstance(v, dict):
@@ -111,9 +114,10 @@ def merge_config(configdata: Iterable[Dict]) -> Dict:
                         dest[k] = [dest[k], v] if isinstance(dest[k], str) else dest[k] + [v]
                     else:
                         dest[k] = v
-                except Exception as e:
-                    raise ConfigException("cannot merge config '{}': {}",
-                                          config.get("name"), e) from e
+            except Exception as e:
+                name = config.get("name") if hasattr(config, "get") else ""
+                raise ConfigException("cannot merge config #{} name={} section={} : {}",
+                                      n, name, section, e) from e
     return out_config
 
 
@@ -121,8 +125,8 @@ def load_config(configlist: TYPE_CONFIG_LIST,
                 formats: List[str] = None) -> Dict:
     """
     Load & combine PIISA configuration files
-      :param filename: config filename(s) to load, or already loaded config
-         dictionaries
+      :param configlist: list of config filename(s) to load, or already loaded
+         config dictionaries
       :param formats: restrict the formats to load (a "full" format
          is always read, and the valid module sections in it retained)
       :return: a single dictionary with the config data, indexed by config
@@ -166,7 +170,7 @@ def load_single_config(base: Union[str, Path], format: str,
     """
     Read the configuration for a single module
      :param base: filename containing a base (default) configuration
-     :param format: config section to read
+     :param format: single config section to read
      :param configlist: optional list of additional configurations to add
      :return: the module config
     """
