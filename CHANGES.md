@@ -1,12 +1,16 @@
 # Changelog
 
 ## v. 0.6.0
- * retritten full iteration for table documents
- * fixes in yaml dump
+ * rewritten full iteration for table documents, using the column name as 
+   context
+ * fixes in YAML dump
  * additional functions for loading documents from JSON/YAML
 
 
 ## v. 0.5.1
+ * `DocumentChunk` method renamed as_dict() => asdict() for consistency
+   (with an alias to the old name for backwards compatibility)
+ * improved error handling of invalid config files
  * fix: rawdoc script
 
 

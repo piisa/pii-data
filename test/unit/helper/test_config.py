@@ -350,7 +350,7 @@ def test360_load_multi_error():
     config = DATADIR / "blurb.json", DATADIR / "error3.json"
     with pytest.raises(ConfigException) as excinfo:
         mod.load_config(config)
-    assert f"cannot merge config '{DATADIR / 'error3.json'}': unsupported operand type(s) for +=: 'dict' and 'list'" == str(excinfo.value)
+    assert f"cannot merge config #2 name={DATADIR / 'error3.json'} section=blurb:v1 : unsupported operand type(s) for +=: 'dict' and 'list'" == str(excinfo.value)
 
 
 def test500_load_single_config():
