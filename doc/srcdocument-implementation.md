@@ -3,10 +3,10 @@
 The `SrcDocument` and direct child classes (sequence, tree, table) are
 abstract subclasses: they provide the base infrastructure to operate with
 documents:
- * base constructors
- * iterators: 
+ * the base constructors
+ * two different iterators: 
      - the `iter_full()` method: a _full_ chunk iterator (the object default
-	   iterator is an alias to this method). This method generates
+	   iterator is an alias to this method). This method generates a sequence of
 	   [DocumentChunk] objects.
 	 - the `iter_struct()` method: a _native_ structured iterator, whose
 	   output shows more of the document structure. This method produces
@@ -26,22 +26,23 @@ to create a fully functioning class, it is necessary:
     `TableSrcDocument`
  2. To implement the low-level `iter_base()` method, used by the high-level
     iterators
-   
+
+
 ## iter_base
 
 This method must return an iterator that will produce data according to the
 _native_ data structure. In general the method can deliver, for each iteration: 
  - either a dictionary, containing at least a `data` field (which contains the 
-   chunk payload)
- - or an arbitrary object (e.g. a plain string) representing the payload
-   directly. It will then be wrapped around to produce the dictionary
+   payload) and optionally an `id` field
+ - or an arbitrary object (e.g. a plain string) representing the payload directly.
+   In this case, it will then be wrapped around to produce the dictionary
    
 Depending on the document type, there are particularities:
  - Sequence documents must produce a linear sequence of chunks, in either of
    the two formats mentioned above
- - Table document must produce document rows, in also either of the two
-   formats: in this case either a list directly containing the row, or a 
-   dictionary with a `data` field containing the row as a list
+ - Table documents must produce document rows, in also two possible formats:
+   either a list directly containing the row elements, or a dictionary with a
+   `data` field containing the row as a list
  - Tree documents must produce elements representing document subtrees. 
    Each such element is either:
      - a top-level isolated paragraph, as either a dict or a plain string

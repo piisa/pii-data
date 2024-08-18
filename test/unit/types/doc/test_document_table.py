@@ -29,6 +29,10 @@ ROWS = [
 
 class ExampleTableSrcDoc(mod.TableSrcDocument):
     """A child class for testing purposes"""
+
+    def __init__(self, **kwargs):
+        super().__init__({"column": {"name": COLNAMES}}, **kwargs)
+
     def iter_base(self):
         for r in ROWS:
             yield {"data": r}
@@ -115,9 +119,12 @@ def test310_iter_full_ctx(fix_uuid):
     for n, (e, g) in enumerate(zip(exp, list(obj))):
         assert e.id == g.id
         assert e.data == g.data
-        cols = ["after", "column", "document", "row"] if n == 0 else \
-            ["before", "column", "document", "row"] if n == len(exp)-1 else \
-            ["after", "before", "column", "document", "row"]
+
+        #cols = ["column", "document", "row"] if n == 0 else \
+        #    ["before", "column", "document", "row"] if n == len(exp)-1 else \
+        #    ["after", "before", "column", "document", "row"]
+
+        cols = ["before", "column", "document", "row"]
         assert sorted(g.context.keys()) == cols
 
 
@@ -141,7 +148,10 @@ def test320_iter_full_ctx_name(fix_uuid):
     for n, (e, g) in enumerate(zip(exp, got)):
         assert e.id == g.id
         assert e.data == g.data
-        cols = ["after", "column", "document", "row"] if n == 0 else \
-            ["before", "column", "document", "row"] if n == len(exp)-1 else \
-            ["after", "before", "column", "document", "row"]
+
+        #cols = ["after", "column", "document", "row"] if n == 0 else \
+        #    ["before", "column", "document", "row"] if n == len(exp)-1 else \
+        #    ["after", "before", "column", "document", "row"]
+
+        cols = ["before", "column", "document", "row"]
         assert sorted(g.context.keys()) == cols

@@ -247,7 +247,7 @@ def test500_iter():
 
 
 def test510_iter_context():
-    """Test object iteration, iteration options"""
+    """Test object iteration, add context to iteration"""
     obj = mod.load_file(DATADIR / "seq-id.yaml", iter_options={"context": True})
     got = list(obj)
 

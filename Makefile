@@ -45,7 +45,7 @@ backup: version
 	tar cvjf $(NAME)-$(VERSION).tgz \
 	  --exclude=__pycache__ --exclude=pii_data.egg-info \
 	  doc src test \
-	  CHANGES.txt LICENSE README.md \
+	  LICENSE CHANGES.md README.md \
 	  Makefile MANIFEST.in requirements.txt setup.py
 
 # --------------------------------------------------------------------------

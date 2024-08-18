@@ -38,7 +38,7 @@ def serialize_chunk(chunk, ctx_fields: Set[str], ctx_pos: bool):
 
 
 
-class CustomJSONEncoder(json.JSONEncoder):
+class DocJSONEncoder(json.JSONEncoder):
     '''
     A custom JSON encoder that can serialize additional objects:
       - datetime objects (into ISO 8601 strings)
@@ -99,7 +99,7 @@ def dump_json(doc: SrcDocument, outputfile: str,
     # Write it. Ensure we only close it if we opened it
     f = openfile(outputfile, "wt", encoding="utf-8")
     try:
-        json.dump(data, f, cls=CustomJSONEncoder, **dump_args)
+        json.dump(data, f, cls=DocJSONEncoder, **dump_args)
     finally:
         if f != outputfile:
             f.close()

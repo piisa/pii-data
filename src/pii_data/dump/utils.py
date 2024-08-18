@@ -21,4 +21,4 @@ class ChunkIterWrapper:
         return iter(self.chk)
 
     def __repr__(self):
-        return "<ChunkWrapper>"
+        return "<ChunkIterWrapper>"

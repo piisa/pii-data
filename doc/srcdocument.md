@@ -39,8 +39,9 @@ the `iter_base()` method.
 
 One additional defined subclass of a `SrcDocument` is the 
 `BaseLocalSrcDocument` class, which holds all document chunks in memory (the
-original `SrcDocument` class might produce them on demand from a source), 
-and can load/dump to a file.
+original `SrcDocument` class might produce them on demand from a source),
+provides an `iter_base()` iterator, and can dump data to a local file (in
+standard [PIISA format](#file-format))
 
 Subclasses of `BaseLocalSrcDocument` are also defined for each of the three
 document types:
@@ -48,12 +49,18 @@ document types:
  * `TreeLocalSrcDocument`
  * `TableLocalSrcDocument`
 
-Local documents have two means of acquiring their chunks:
- * all in one step, via the `set_chunks()` method (or the equivalent parameter
-   in the constructor)
- * incrementally, one at a time, via the `add_chunk()` method. In this case,
-   for documents with structure (tree, table), fields in the chunk context are
-   used to determine the chunk position within that structure.
+These local documents offer two predefined means of populating their chunks:
+ * all in one step, by using their `set_chunks()` method (or the equivalent
+   parameter in the constructor)
+ * incrementally, one at a time, by calling the `add_chunk()` method repeatedly.
+   In this case, for documents with structure (tree, table), fields in the chunk
+   context are used to determine the chunk position within that structure.
+
+Another alternative to provide the data is to override in a subclass the
+`iter_base()` by a custom method, which would fetch the data from a specific
+source. This can be used to [implement classes] that read data from other file
+formats.
+
 
 ## Dispatcher classes
 
@@ -62,7 +69,7 @@ Two wrapper classes can be used to abstract away the document variant:
    the document variant (`sequence`, `tree`, `table`) and creates a
    `*LocalSrcDocument` of the appropriate class
  * `LocalSrcDocumentFile` is a dispatcher class that takes as its first
-   argument a filename contianing a serialized document (see below), opens
+   argument a filename containing a serialized PIISA document (see below), opens
    and loads it and returns an object of the right class (after parsing the
    document header).
 
@@ -83,5 +90,6 @@ of YAML anyway).
 
 [data specification]: https://github.com/piisa/piisa/
 [block literal style]: https://yaml.org/spec/1.2.2/#812-literal-style
-[implement]: implementing-srcdocument.md
+[implement]: srcdocument-implementation.md
 [DocumentChunk]: chunks.md
+[implement classes]: srcdocument-implementation.md#subclassing-the-local-classes
